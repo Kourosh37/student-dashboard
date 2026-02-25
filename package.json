@@ -1,0 +1,44 @@
+{
+  "name": "student-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "jose": "^6.1.3",
+    "lucide-react": "^0.575.0",
+    "next": "16.1.6",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "prisma": "^6.16.2",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}

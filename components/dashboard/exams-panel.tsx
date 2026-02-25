@@ -1,0 +1,373 @@
+"use client";
+
+import type React from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LoaderCircle, Pin, Plus, Trash2 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Modal } from "@/components/ui/modal";
+import { Textarea } from "@/components/ui/textarea";
+import { apiFetch } from "@/lib/client-api";
+import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
+import { pushToast } from "@/lib/toast";
+import { useRealtime } from "@/lib/use-realtime";
+import type { Course, Exam, ExamStatus, ExamType, Semester } from "@/types/dashboard";
+
+const examTypeOptions: ExamType[] = ["MIDTERM", "FINAL", "QUIZ", "PROJECT", "PRESENTATION", "ASSIGNMENT", "OTHER"];
+const examStatusOptions: ExamStatus[] = ["SCHEDULED", "COMPLETED", "MISSED"];
+
+type ExamsResponse = {
+  items: Exam[];
+  total: number;
+};
+
+export function ExamsPanel() {
+  const router = useRouter();
+  const [items, setItems] = useState<Exam[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [formError, setFormError] = useState<PanelError | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | ExamStatus>("");
+  const [form, setForm] = useState({
+    title: "",
+    semesterId: "",
+    courseId: "",
+    examType: "MIDTERM" as ExamType,
+    status: "SCHEDULED" as ExamStatus,
+    examDate: "",
+    startTime: "",
+    durationMinutes: "",
+    location: "",
+    notes: "",
+    isPinned: false,
+  });
+
+  const availableCourses = useMemo(
+    () => (form.semesterId ? courses.filter((course) => course.semesterId === form.semesterId) : courses),
+    [courses, form.semesterId],
+  );
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set("limit", "120");
+      params.set("offset", "0");
+      if (query.trim()) params.set("q", query.trim());
+      if (statusFilter) params.set("status", statusFilter);
+
+      const [examData, courseData, semesterData] = await Promise.all([
+        apiFetch<ExamsResponse>(`/api/v1/exams?${params.toString()}`),
+        apiFetch<{ items: Course[]; total: number }>("/api/v1/courses?limit=200&offset=0"),
+        apiFetch<Semester[]>("/api/v1/semesters"),
+      ]);
+      setItems(examData.items);
+      setCourses(courseData.items);
+      setSemesters(semesterData);
+    } catch (err) {
+      const parsed = toPanelError(err, "Failed to load exams");
+      if (parsed.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+    } finally {
+      setLoading(false);
+    }
+  }, [query, statusFilter, router]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useRealtime({
+    onMessage: (message) => {
+      if (["exam.created", "exam.updated", "exam.deleted"].includes(message.type)) {
+        loadData();
+      }
+    },
+  });
+
+  async function createExam(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setFormError(null);
+    try {
+      await apiFetch<Exam>("/api/v1/exams", {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          semesterId: form.semesterId || null,
+          courseId: form.courseId || null,
+          examDate: new Date(form.examDate).toISOString(),
+          startTime: form.startTime || null,
+          durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null,
+          location: form.location || null,
+          notes: form.notes || null,
+        }),
+      });
+      setForm({
+        title: "",
+        semesterId: "",
+        courseId: "",
+        examType: "MIDTERM",
+        status: "SCHEDULED",
+        examDate: "",
+        startTime: "",
+        durationMinutes: "",
+        location: "",
+        notes: "",
+        isPinned: false,
+      });
+      setCreateOpen(false);
+      pushToast({ tone: "success", title: "Exam created" });
+      await loadData();
+    } catch (err) {
+      const parsed = toPanelError(err, "Failed to create exam");
+      setFormError(parsed);
+      pushToast({ tone: "error", title: "Create failed", description: parsed.message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function updateExam(id: string, payload: Partial<Exam>) {
+    try {
+      const updated = await apiFetch<Exam>(`/api/v1/exams/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    } catch (err) {
+      const parsed = toPanelError(err, "Failed to update exam");
+      pushToast({ tone: "error", title: "Update failed", description: parsed.message });
+    }
+  }
+
+  async function removeExam(id: string) {
+    if (!window.confirm("Delete this exam?")) return;
+    try {
+      await apiFetch<{ deleted: boolean }>(`/api/v1/exams/${id}`, { method: "DELETE" });
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      pushToast({ tone: "success", title: "Exam deleted" });
+    } catch (err) {
+      const parsed = toPanelError(err, "Failed to delete exam");
+      pushToast({ tone: "error", title: "Delete failed", description: parsed.message });
+    }
+  }
+
+  const titleError = fieldError(formError?.fieldErrors ?? {}, "title");
+  const examDateError = fieldError(formError?.fieldErrors ?? {}, "examDate");
+
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-2xl font-bold">Exams</h2>
+        <Button type="button" onClick={() => setCreateOpen(true)}>
+          <Plus className="me-2 h-4 w-4" />
+          New Exam
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Exam List</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+            <Input placeholder="Search exams" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <select
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as "" | ExamStatus)}
+            >
+              <option value="">All statuses</option>
+              {examStatusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {loading ? (
+            <div className="flex min-h-24 items-center justify-center">
+              <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No exams found.</p>
+          ) : (
+            <div className="space-y-3">
+              {items.map((exam) => (
+                <article key={exam.id} className="rounded-md border border-border/70 p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{exam.title}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(exam.examDate).toLocaleString()}</p>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        <Badge variant="secondary">{exam.examType}</Badge>
+                        <Badge variant="outline">{exam.status}</Badge>
+                        {exam.course && <Badge variant="outline">{exam.course.name}</Badge>}
+                        {exam.location && <Badge variant="outline">{exam.location}</Badge>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                        value={exam.status}
+                        onChange={(event) => updateExam(exam.id, { status: event.target.value as ExamStatus })}
+                      >
+                        {examStatusOptions.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => updateExam(exam.id, { isPinned: !exam.isPinned })}>
+                        <Pin className={`h-4 w-4 ${exam.isPinned ? "fill-current" : ""}`} />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeExam(exam.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Exam" description="Create exam in popup dialog.">
+        <form className="grid gap-4 md:grid-cols-2" onSubmit={createExam}>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Title</Label>
+            <Input value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} aria-invalid={Boolean(titleError)} required />
+            {titleError && <p className="text-xs text-destructive">{titleError}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Semester</Label>
+            <select
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={form.semesterId}
+              onChange={(event) => setForm((prev) => ({ ...prev, semesterId: event.target.value, courseId: "" }))}
+            >
+              <option value="">None</option>
+              {semesters.map((semester) => (
+                <option key={semester.id} value={semester.id}>
+                  {semester.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Course</Label>
+            <select
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={form.courseId}
+              onChange={(event) => setForm((prev) => ({ ...prev, courseId: event.target.value }))}
+            >
+              <option value="">None</option>
+              {availableCourses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <select
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={form.examType}
+              onChange={(event) => setForm((prev) => ({ ...prev, examType: event.target.value as ExamType }))}
+            >
+              {examTypeOptions.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <select
+              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              value={form.status}
+              onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as ExamStatus }))}
+            >
+              {examStatusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Exam Date & Time</Label>
+            <Input
+              type="datetime-local"
+              value={form.examDate}
+              onChange={(event) => setForm((prev) => ({ ...prev, examDate: event.target.value }))}
+              aria-invalid={Boolean(examDateError)}
+              required
+            />
+            {examDateError && <p className="text-xs text-destructive">{examDateError}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Start Time</Label>
+            <Input type="time" value={form.startTime} onChange={(event) => setForm((prev) => ({ ...prev, startTime: event.target.value }))} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Duration (minutes)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={600}
+              value={form.durationMinutes}
+              onChange={(event) => setForm((prev) => ({ ...prev, durationMinutes: event.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Location</Label>
+            <Input value={form.location} onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))} />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label>Notes</Label>
+            <Textarea value={form.notes} onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))} />
+          </div>
+
+          <label className="flex items-center gap-2 text-sm md:col-span-2">
+            <input type="checkbox" checked={form.isPinned} onChange={(event) => setForm((prev) => ({ ...prev, isPinned: event.target.checked }))} />
+            Pin exam
+          </label>
+
+          <div className="md:col-span-2">
+            <Button type="submit" disabled={saving}>
+              {saving ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Plus className="me-2 h-4 w-4" />}
+              Create Exam
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </section>
+  );
+}

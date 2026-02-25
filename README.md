@@ -1,0 +1,88 @@
+# Student Dashboard
+
+Student Dashboard is a full-stack academic management application built with Next.js, Prisma, and PostgreSQL.
+
+## Core Modules
+
+- Authentication with secure session cookie
+- Student profile and academic identity
+- Semester management
+- Course management with weekly class sessions
+- Schedule view with filtering and search
+- Exam planner with status tracking
+- Planner items (tasks, assignments, study plan)
+- Real-time sync via SSE across modules
+- Reminder notifications (API + browser alerts)
+- Calendar ICS export
+- Folder-based file manager
+- File upload, pinning, filtering, tagging, preview, download
+
+## Tech Stack
+
+- Next.js 16 (App Router + Route Handlers)
+- React 19 + TypeScript
+- Tailwind CSS v4 + shadcn-style components
+- Prisma ORM
+- PostgreSQL via Docker
+
+## Quick Start
+
+1. Install dependencies:
+
+```bash
+pnpm install
+```
+
+2. Copy environment template:
+
+```bash
+cp .env.example .env
+```
+
+3. Start PostgreSQL:
+
+```bash
+pnpm db:up
+```
+
+4. Generate Prisma client and push schema:
+
+```bash
+pnpm db:generate
+pnpm db:push
+```
+
+5. Seed initial student account:
+
+```bash
+pnpm db:seed
+```
+
+6. Run app:
+
+```bash
+pnpm dev
+```
+
+Open `http://localhost:3000`.
+
+## Main API Groups
+
+- `/api/v1/auth/*`
+- `/api/v1/profile`
+- `/api/v1/semesters*`
+- `/api/v1/courses*`
+- `/api/v1/schedule`
+- `/api/v1/calendar`
+- `/api/v1/calendar/ics`
+- `/api/v1/exams*`
+- `/api/v1/planner*`
+- `/api/v1/notifications/reminders`
+- `/api/v1/folders*`
+- `/api/v1/files*`
+- `/api/v1/dashboard/summary`
+
+## File Preview Notes
+
+- In-app preview: image, video, audio, PDF, and text files.
+- Office files (`docx`, `pptx`, etc.) are managed via upload/download metadata flow and external editor workflow.
