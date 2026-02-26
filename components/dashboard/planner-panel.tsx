@@ -20,6 +20,7 @@ import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
 import { useConflictConfirm } from "@/lib/use-conflict-confirm";
+import { useConfirmDialog } from "@/lib/use-confirm-dialog";
 import type { PlannerCadence, PlannerItem, PlannerPriority, PlannerStatus, ScheduleConflict } from "@/types/dashboard";
 
 const statusOptions: PlannerStatus[] = ["TODO", "IN_PROGRESS", "DONE", "ARCHIVED"];
@@ -83,6 +84,7 @@ export function PlannerPanel() {
   });
 
   const { requestConfirm, conflictDialog } = useConflictConfirm();
+  const { requestConfirm: requestDeleteConfirm, confirmDialog: deleteConfirmDialog } = useConfirmDialog();
 
   const loadAll = useCallback(async () => {
     try {
@@ -224,7 +226,8 @@ export function PlannerPanel() {
   }
 
   async function removeItem(id: string) {
-    if (!window.confirm("این آیتم برنامه ریزی حذف شود؟")) return;
+    const shouldDelete = await requestDeleteConfirm({ title: "این آیتم برنامه ریزی حذف شود؟" });
+    if (!shouldDelete) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/planner/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((item) => item.id !== id));
@@ -470,6 +473,7 @@ export function PlannerPanel() {
       </Modal>
 
       {conflictDialog}
+      {deleteConfirmDialog}
     </section>
   );
 }

@@ -14,6 +14,7 @@ import { apiFetch, apiFetchForm } from "@/lib/client-api";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
+import { useConfirmDialog } from "@/lib/use-confirm-dialog";
 import { formatFileSize } from "@/lib/utils";
 import type { Course, FileItem, Folder, PlannerItem, Semester } from "@/types/dashboard";
 
@@ -46,6 +47,7 @@ type PreviewMeta = {
 
 export function FilesPanel() {
   const router = useRouter();
+  const { requestConfirm: requestDeleteConfirm, confirmDialog: deleteConfirmDialog } = useConfirmDialog();
 
   const [files, setFiles] = useState<FileItem[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -253,7 +255,8 @@ export function FilesPanel() {
   }
 
   async function removeFolder(folderId: string) {
-    if (!window.confirm("این پوشه حذف شود؟")) return;
+    const shouldDelete = await requestDeleteConfirm({ title: "این پوشه حذف شود؟" });
+    if (!shouldDelete) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/folders/${folderId}`, { method: "DELETE" });
       if (selectedFolderId === folderId) {
@@ -268,7 +271,8 @@ export function FilesPanel() {
   }
 
   async function removeFile(id: string) {
-    if (!window.confirm("این فایل حذف شود؟")) return;
+    const shouldDelete = await requestDeleteConfirm({ title: "این فایل حذف شود؟" });
+    if (!shouldDelete) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/files/${id}`, { method: "DELETE" });
       if (preview?.id === id) {
@@ -748,6 +752,7 @@ export function FilesPanel() {
           </div>
         )}
       </Modal>
+      {deleteConfirmDialog}
     </section>
   );
 }

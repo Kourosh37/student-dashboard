@@ -13,10 +13,12 @@ import { formatDate } from "@/lib/fa";
 import { toPanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
+import { useConfirmDialog } from "@/lib/use-confirm-dialog";
 import type { Semester } from "@/types/dashboard";
 
 export function SemestersPanel() {
   const router = useRouter();
+  const { requestConfirm: requestDeleteConfirm, confirmDialog: deleteConfirmDialog } = useConfirmDialog();
   const [items, setItems] = useState<Semester[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -70,7 +72,8 @@ export function SemestersPanel() {
   }
 
   async function removeSemester(id: string) {
-    if (!window.confirm("این ترم حذف شود؟")) return;
+    const shouldDelete = await requestDeleteConfirm({ title: "این ترم حذف شود؟" });
+    if (!shouldDelete) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/semesters/${id}`, { method: "DELETE" });
       pushToast({ tone: "success", title: "ترم حذف شد" });
@@ -140,6 +143,7 @@ export function SemestersPanel() {
           )}
         </CardContent>
       </Card>
+      {deleteConfirmDialog}
     </section>
   );
 }

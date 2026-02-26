@@ -8,58 +8,58 @@
 } from "@/types/dashboard";
 
 const weekdayMap: Record<Weekday, string> = {
-  MONDAY: "Ø¯ÙˆØ´Ù†Ø¨Ù‡",
-  TUESDAY: "Ø³Ù‡ Ø´Ù†Ø¨Ù‡",
-  WEDNESDAY: "Ú†Ù‡Ø§Ø±Ø´Ù†Ø¨Ù‡",
-  THURSDAY: "Ù¾Ù†Ø¬Ø´Ù†Ø¨Ù‡",
-  FRIDAY: "Ø¬Ù…Ø¹Ù‡",
-  SATURDAY: "Ø´Ù†Ø¨Ù‡",
-  SUNDAY: "ÛŒÚ©Ø´Ù†Ø¨Ù‡",
+  MONDAY: "دوشنبه",
+  TUESDAY: "سه شنبه",
+  WEDNESDAY: "چهارشنبه",
+  THURSDAY: "پنجشنبه",
+  FRIDAY: "جمعه",
+  SATURDAY: "شنبه",
+  SUNDAY: "یکشنبه",
 };
 
 const plannerStatusMap: Record<PlannerStatus, string> = {
-  TODO: "Ø¨Ø±Ø§ÛŒ Ø§Ù†Ø¬Ø§Ù…",
-  IN_PROGRESS: "Ø¯Ø± Ø­Ø§Ù„ Ø§Ù†Ø¬Ø§Ù…",
-  DONE: "Ø§Ù†Ø¬Ø§Ù… Ø´Ø¯Ù‡",
-  ARCHIVED: "Ø¨Ø§ÛŒÚ¯Ø§Ù†ÛŒ",
+  TODO: "برای انجام",
+  IN_PROGRESS: "در حال انجام",
+  DONE: "انجام شده",
+  ARCHIVED: "بایگانی",
 };
 
 const plannerPriorityMap: Record<PlannerPriority, string> = {
-  LOW: "Ú©Ù…",
-  MEDIUM: "Ù…ØªÙˆØ³Ø·",
-  HIGH: "Ø²ÛŒØ§Ø¯",
-  URGENT: "ÙÙˆØ±ÛŒ",
+  LOW: "کم",
+  MEDIUM: "متوسط",
+  HIGH: "زیاد",
+  URGENT: "فوری",
 };
 
 const plannerCadenceMap: Record<PlannerCadence, string> = {
-  DAILY: "Ø±ÙˆØ²Ø§Ù†Ù‡",
-  WEEKLY: "Ù‡ÙØªÚ¯ÛŒ",
-  MONTHLY: "Ù…Ø§Ù‡Ø§Ù†Ù‡",
+  DAILY: "روزانه",
+  WEEKLY: "هفتگی",
+  MONTHLY: "ماهانه",
 };
 
 const examTypeMap: Record<ExamType, string> = {
-  MIDTERM: "Ù…ÛŒØ§Ù† ØªØ±Ù…",
-  FINAL: "Ù¾Ø§ÛŒØ§Ù† ØªØ±Ù…",
-  QUIZ: "Ú©ÙˆÛŒÛŒØ²",
-  PROJECT: "Ù¾Ø±ÙˆÚ˜Ù‡",
-  PRESENTATION: "Ø§Ø±Ø§Ø¦Ù‡",
-  ASSIGNMENT: "ØªÚ©Ù„ÛŒÙ",
-  OTHER: "Ø³Ø§ÛŒØ±",
+  MIDTERM: "میان ترم",
+  FINAL: "پایان ترم",
+  QUIZ: "کوییز",
+  PROJECT: "پروژه",
+  PRESENTATION: "ارائه",
+  ASSIGNMENT: "تکلیف",
+  OTHER: "سایر",
 };
 
 const examStatusMap: Record<ExamStatus, string> = {
-  SCHEDULED: "Ø¨Ø±Ù†Ø§Ù…Ù‡ Ø±ÛŒØ²ÛŒ Ø´Ø¯Ù‡",
-  COMPLETED: "Ø¨Ø±Ú¯Ø²Ø§Ø± Ø´Ø¯Ù‡",
-  MISSED: "Ø§Ø² Ø¯Ø³Øª Ø±ÙØªÙ‡",
+  SCHEDULED: "برنامه ریزی شده",
+  COMPLETED: "برگزار شده",
+  MISSED: "از دست رفته",
 };
 
 export function weekdayLabel(value: Weekday | "") {
-  if (!value) return "Ù‡Ù…Ù‡ Ø±ÙˆØ²Ù‡Ø§";
+  if (!value) return "همه روزها";
   return weekdayMap[value];
 }
 
 export function plannerStatusLabel(value: PlannerStatus | "") {
-  if (!value) return "Ù‡Ù…Ù‡ ÙˆØ¶Ø¹ÛŒØª Ù‡Ø§";
+  if (!value) return "همه وضعیت ها";
   return plannerStatusMap[value];
 }
 
@@ -68,7 +68,7 @@ export function plannerPriorityLabel(value: PlannerPriority) {
 }
 
 export function plannerCadenceLabel(value: PlannerCadence | "") {
-  if (!value) return "Ù‡Ù…Ù‡ Ø¨Ø§Ø²Ù‡ Ù‡Ø§";
+  if (!value) return "همه بازه ها";
   return plannerCadenceMap[value];
 }
 
@@ -77,7 +77,7 @@ export function examTypeLabel(value: ExamType) {
 }
 
 export function examStatusLabel(value: ExamStatus | "") {
-  if (!value) return "Ù‡Ù…Ù‡ ÙˆØ¶Ø¹ÛŒØª Ù‡Ø§";
+  if (!value) return "همه وضعیت ها";
   return examStatusMap[value];
 }
 
@@ -98,4 +98,3 @@ export function formatDateTime(value: string | Date) {
     minute: "2-digit",
   });
 }
-

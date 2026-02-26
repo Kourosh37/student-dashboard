@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -51,13 +51,13 @@ export function OverviewPanel() {
       const summary = await apiFetch<SummaryResponse>("/api/v1/dashboard/summary");
       setData(summary);
     } catch (err) {
-      const parsed = toPanelError(err, "Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯");
+      const parsed = toPanelError(err, "بارگذاری داشبورد انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
       setLoadFailed(true);
-      pushToast({ tone: "error", title: "Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ø§Ù…ÙˆÙÙ‚ Ø¨ÙˆØ¯", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -100,10 +100,10 @@ export function OverviewPanel() {
   if (loadFailed) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">Ø¯Ø§Ø¯Ù‡ Ù‡Ø§ÛŒ Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯ Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ø´Ø¯.</p>
+        <p className="text-sm text-muted-foreground">داده های داشبورد بارگذاری نشد.</p>
         <Button variant="outline" onClick={loadData}>
           <RotateCw className="me-2 h-4 w-4" />
-          ØªÙ„Ø§Ø´ Ø¯ÙˆØ¨Ø§Ø±Ù‡
+          تلاش دوباره
         </Button>
       </div>
     );
@@ -117,22 +117,22 @@ export function OverviewPanel() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯ Ø¯Ø§Ù†Ø´Ø¬Ùˆ</h2>
-        <p className="text-sm text-muted-foreground">Ù†Ù…Ø§ÛŒ Ú©Ù„ÛŒ Ø¨Ø±Ù†Ø§Ù…Ù‡ Ø±ÛŒØ²ÛŒØŒ Ú©Ù„Ø§Ø³ Ù‡Ø§ØŒ Ø§Ù…ØªØ­Ø§Ù†Ø§Øª Ùˆ ÙØ§ÛŒÙ„ Ù‡Ø§</p>
+        <h2 className="text-2xl font-bold">داشبورد دانشجو</h2>
+        <p className="text-sm text-muted-foreground">نمای کلی برنامه ریزی، کلاس ها، امتحانات و فایل ها</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Ú©Ø§Ø±Ù‡Ø§ÛŒ Ø¨Ø±Ù†Ø§Ù…Ù‡ Ø±ÛŒØ²ÛŒ" value={data.planner.total} icon={<CheckCircle2 className="h-4 w-4" />} />
-        <StatsCard title="Ø§Ù…ØªØ­Ø§Ù†Ø§Øª Ù¾ÛŒØ´ Ø±Ùˆ" value={data.upcomingExams.length} icon={<GraduationCap className="h-4 w-4" />} />
-        <StatsCard title="Ø¬Ù„Ø³Ù‡ Ù‡Ø§ÛŒ Ú©Ù„Ø§Ø³ÛŒ" value={data.todaySchedule.length} icon={<CalendarClock className="h-4 w-4" />} />
-        <StatsCard title="ÙØ§ÛŒÙ„ Ù‡Ø§ÛŒ Ø§Ø®ÛŒØ±" value={data.recentFiles.length} icon={<FileUp className="h-4 w-4" />} />
+        <StatsCard title="کارهای برنامه ریزی" value={data.planner.total} icon={<CheckCircle2 className="h-4 w-4" />} />
+        <StatsCard title="امتحانات پیش رو" value={data.upcomingExams.length} icon={<GraduationCap className="h-4 w-4" />} />
+        <StatsCard title="جلسه های کلاسی" value={data.todaySchedule.length} icon={<CalendarClock className="h-4 w-4" />} />
+        <StatsCard title="فایل های اخیر" value={data.recentFiles.length} icon={<FileUp className="h-4 w-4" />} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>ØªØ±Ù… Ø¬Ø§Ø±ÛŒ</CardTitle>
-            <CardDescription>{currentSemester ? "ØªØ±Ù… ÙØ¹Ø§Ù„" : "ØªØ±Ù… ÙØ¹Ø§Ù„ÛŒ Ø§Ù†ØªØ®Ø§Ø¨ Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª"}</CardDescription>
+            <CardTitle>ترم جاری</CardTitle>
+            <CardDescription>{currentSemester ? "ترم فعال" : "ترم فعالی انتخاب نشده است"}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {currentSemester ? (
@@ -140,44 +140,44 @@ export function OverviewPanel() {
                 <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
                   <p className="font-semibold">{currentSemester.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDate(currentSemester.startDate)} ØªØ§ {formatDate(currentSemester.endDate)}
+                    {formatDate(currentSemester.startDate)} تا {formatDate(currentSemester.endDate)}
                   </p>
                 </div>
-                <p className="text-sm text-muted-foreground">ØªØ¹Ø¯Ø§Ø¯ Ú©Ù„ ØªØ±Ù… Ù‡Ø§: {data.semesters.length}</p>
+                <p className="text-sm text-muted-foreground">تعداد کل ترم ها: {data.semesters.length}</p>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">Ø¨Ø±Ø§ÛŒ Ø´Ø±ÙˆØ¹ Ù…Ø¯ÛŒØ±ÛŒØª Ø¯Ø±Ø³ Ù‡Ø§ Ùˆ Ø§Ù…ØªØ­Ø§Ù†Ø§ØªØŒ ÛŒÚ© ØªØ±Ù… Ø§ÛŒØ¬Ø§Ø¯ Ú©Ù†ÛŒØ¯.</p>
+              <p className="text-sm text-muted-foreground">برای شروع مدیریت درس ها و امتحانات، یک ترم ایجاد کنید.</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Ø®Ù„Ø§ØµÙ‡ Ù¾Ø±ÙˆÙØ§ÛŒÙ„</CardTitle>
-            <CardDescription>Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù‡ÙˆÛŒØªÛŒ Ùˆ ØªØ­ØµÛŒÙ„ÛŒ</CardDescription>
+            <CardTitle>خلاصه پروفایل</CardTitle>
+            <CardDescription>اطلاعات هویتی و تحصیلی</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="mb-3">
-              <UserAvatar src={data.profile?.avatarUrl ?? null} alt="ØªØµÙˆÛŒØ± Ù¾Ø±ÙˆÙØ§ÛŒÙ„" className="h-20 w-20" />
+              <UserAvatar src={data.profile?.avatarUrl ?? null} alt="تصویر پروفایل" className="h-20 w-20" />
             </div>
             <p className="text-sm">
-              <span className="text-muted-foreground">Ù†Ø§Ù…: </span>
+              <span className="text-muted-foreground">نام: </span>
               {data.profile?.name ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Ø´Ù…Ø§Ø±Ù‡ Ø¯Ø§Ù†Ø´Ø¬ÙˆÛŒÛŒ: </span>
+              <span className="text-muted-foreground">شماره دانشجویی: </span>
               {data.profile?.studentId ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Ø¯Ø§Ù†Ø´Ú¯Ø§Ù‡: </span>
+              <span className="text-muted-foreground">دانشگاه: </span>
               {data.profile?.university ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Ø±Ø´ØªÙ‡: </span>
+              <span className="text-muted-foreground">رشته: </span>
               {data.profile?.major ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">ØªØ±Ù… ÙØ¹Ù„ÛŒ: </span>
+              <span className="text-muted-foreground">ترم فعلی: </span>
               {data.profile?.currentTerm ?? "-"}
             </p>
           </CardContent>
@@ -187,11 +187,11 @@ export function OverviewPanel() {
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-1">
           <CardHeader>
-            <CardTitle>Ø§Ù…ØªØ­Ø§Ù†Ø§Øª Ù¾ÛŒØ´ Ø±Ùˆ</CardTitle>
+            <CardTitle>امتحانات پیش رو</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.upcomingExams.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ø§Ù…ØªØ­Ø§Ù† Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.</p>
+              <p className="text-sm text-muted-foreground">امتحانی ثبت نشده است.</p>
             ) : (
               data.upcomingExams.slice(0, 5).map((exam) => (
                 <div key={exam.id} className="rounded-md border border-border/70 p-2">
@@ -206,11 +206,11 @@ export function OverviewPanel() {
 
         <Card className="xl:col-span-1">
           <CardHeader>
-            <CardTitle>Ø¨Ø±Ù†Ø§Ù…Ù‡ Ù‡ÙØªÚ¯ÛŒ</CardTitle>
+            <CardTitle>برنامه هفتگی</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.todaySchedule.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ø¬Ù„Ø³Ù‡ Ú©Ù„Ø§Ø³ÛŒ Ø«Ø¨Øª Ù†Ø´Ø¯Ù‡ Ø§Ø³Øª.</p>
+              <p className="text-sm text-muted-foreground">جلسه کلاسی ثبت نشده است.</p>
             ) : (
               data.todaySchedule.slice(0, 8).map((entry) => (
                 <div key={entry.sessionId} className="rounded-md border border-border/70 p-2">
@@ -220,7 +220,7 @@ export function OverviewPanel() {
                   <p className="text-xs text-muted-foreground">
                     {weekdayLabel(entry.weekday)} | {entry.startTime}-{entry.endTime}
                   </p>
-                  <p className="text-xs text-muted-foreground">{entry.room ?? "Ø¨Ø¯ÙˆÙ† Ú©Ù„Ø§Ø³"}</p>
+                  <p className="text-xs text-muted-foreground">{entry.room ?? "بدون کلاس"}</p>
                 </div>
               ))
             )}
@@ -229,11 +229,11 @@ export function OverviewPanel() {
 
         <Card className="xl:col-span-1">
           <CardHeader>
-            <CardTitle>ÙØ§ÛŒÙ„ Ù‡Ø§ÛŒ Ø³Ù†Ø¬Ø§Ù‚ Ø´Ø¯Ù‡</CardTitle>
+            <CardTitle>فایل های سنجاق شده</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {pinnedFiles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">ÙØ§ÛŒÙ„ Ø³Ù†Ø¬Ø§Ù‚ Ø´Ø¯Ù‡ Ø§ÛŒ ÙˆØ¬ÙˆØ¯ Ù†Ø¯Ø§Ø±Ø¯.</p>
+              <p className="text-sm text-muted-foreground">فایل سنجاق شده ای وجود ندارد.</p>
             ) : (
               pinnedFiles.slice(0, 8).map((file) => (
                 <div key={file.id} className="rounded-md border border-border/70 p-2">
@@ -241,7 +241,7 @@ export function OverviewPanel() {
                   <p className="text-xs text-muted-foreground">
                     {formatFileSize(file.size)} | {formatDateTime(file.createdAt)}
                   </p>
-                  {file.folder && <p className="text-xs text-muted-foreground">Ù¾ÙˆØ´Ù‡: {file.folder.name}</p>}
+                  {file.folder && <p className="text-xs text-muted-foreground">پوشه: {file.folder.name}</p>}
                 </div>
               ))
             )}
@@ -263,4 +263,3 @@ function StatsCard({ title, value, icon }: { title: string; value: number; icon:
     </Card>
   );
 }
-

@@ -26,6 +26,7 @@ import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
 import { useConflictConfirm } from "@/lib/use-conflict-confirm";
+import { useConfirmDialog } from "@/lib/use-confirm-dialog";
 import { formatFileSize } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -210,6 +211,7 @@ function SessionsEditor({ sessions, onChange }: { sessions: SessionDraft[]; onCh
 export function SemesterDetailPage({ semesterId }: Props) {
   const router = useRouter();
   const { requestConfirm, conflictDialog } = useConflictConfirm();
+  const { requestConfirm: requestDeleteConfirm, confirmDialog: deleteConfirmDialog } = useConfirmDialog();
   const uploadSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [semester, setSemester] = useState<Semester | null>(null);
@@ -415,7 +417,8 @@ export function SemesterDetailPage({ semesterId }: Props) {
   }
 
   async function removeCourse(courseId: string) {
-    if (!window.confirm("این درس حذف شود؟")) return;
+    const shouldDelete = await requestDeleteConfirm({ title: "این درس حذف شود؟" });
+    if (!shouldDelete) return;
 
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/courses/${courseId}`, { method: "DELETE" });
@@ -727,6 +730,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
         </CardContent>
       </Card>
 
+      {deleteConfirmDialog}
       {conflictDialog}
     </section>
   );

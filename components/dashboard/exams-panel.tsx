@@ -20,6 +20,7 @@ import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
 import { useConflictConfirm } from "@/lib/use-conflict-confirm";
+import { useConfirmDialog } from "@/lib/use-confirm-dialog";
 import type { Course, Exam, ExamStatus, ExamType, ScheduleConflict, Semester } from "@/types/dashboard";
 
 const examTypeOptions: ExamType[] = ["MIDTERM", "FINAL", "QUIZ", "PROJECT", "PRESENTATION", "ASSIGNMENT", "OTHER"];
@@ -59,6 +60,7 @@ function extractConflicts(error: unknown): ScheduleConflict[] {
 export function ExamsPanel() {
   const router = useRouter();
   const { requestConfirm, conflictDialog } = useConflictConfirm();
+  const { requestConfirm: requestDeleteConfirm, confirmDialog: deleteConfirmDialog } = useConfirmDialog();
   const [items, setItems] = useState<Exam[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [semesters, setSemesters] = useState<Semester[]>([]);
@@ -240,7 +242,8 @@ export function ExamsPanel() {
   }
 
   async function removeExam(id: string) {
-    if (!window.confirm("این امتحان حذف شود؟")) return;
+    const shouldDelete = await requestDeleteConfirm({ title: "این امتحان حذف شود؟" });
+    if (!shouldDelete) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/exams/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((item) => item.id !== id));
@@ -456,6 +459,7 @@ export function ExamsPanel() {
       </Modal>
 
       {conflictDialog}
+      {deleteConfirmDialog}
     </section>
   );
 }

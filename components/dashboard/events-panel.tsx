@@ -20,6 +20,7 @@ import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
 import { useConflictConfirm } from "@/lib/use-conflict-confirm";
+import { useConfirmDialog } from "@/lib/use-confirm-dialog";
 import type { ScheduleConflict, StudentEvent } from "@/types/dashboard";
 
 type EventsResponse = {
@@ -115,6 +116,7 @@ function buildEventPayload(form: EventForm, allowConflicts = false) {
 export function EventsPanel() {
   const router = useRouter();
   const { requestConfirm, conflictDialog } = useConflictConfirm();
+  const { requestConfirm: requestDeleteConfirm, confirmDialog: deleteConfirmDialog } = useConfirmDialog();
 
   const [items, setItems] = useState<StudentEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -312,7 +314,8 @@ export function EventsPanel() {
   }
 
   async function removeEvent(id: string) {
-    if (!window.confirm("این رویداد حذف شود؟")) return;
+    const shouldDelete = await requestDeleteConfirm({ title: "این رویداد حذف شود؟" });
+    if (!shouldDelete) return;
 
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/events/${id}`, { method: "DELETE" });
@@ -540,6 +543,7 @@ export function EventsPanel() {
       </Modal>
 
       {conflictDialog}
+      {deleteConfirmDialog}
     </section>
   );
 }
