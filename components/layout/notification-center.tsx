@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, BellRing, LoaderCircle, RefreshCcw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { faIR } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,8 +50,8 @@ export function NotificationCenter() {
       const response = await apiFetch<ReminderResponse>("/api/v1/notifications/reminders?hours=24&limit=20");
       setItems(response.items);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load reminders");
-      pushToast({ tone: "error", title: "Reminder sync failed", description: parsed.message });
+      const parsed = toPanelError(err, "بارگذاری یادآورها انجام نشد");
+      pushToast({ tone: "error", title: "همگام سازی یادآورها ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -99,9 +100,9 @@ export function NotificationCenter() {
     for (const item of items) {
       if (notified.has(item.id)) continue;
       const when = new Date(item.when);
-      const bodyParts = [formatDistanceToNow(when, { addSuffix: true })];
+      const bodyParts = [formatDistanceToNow(when, { addSuffix: true, locale: faIR })];
       if (item.course?.name) bodyParts.push(item.course.name);
-      new Notification(item.type === "EXAM" ? "Upcoming Exam" : "Upcoming Planner Task", {
+      new Notification(item.type === "EXAM" ? "امتحان نزدیک" : "کار نزدیک", {
         body: `${item.title} | ${bodyParts.join(" | ")}`,
       });
       notified.add(item.id);
@@ -124,16 +125,16 @@ export function NotificationCenter() {
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2">
           {hasCritical ? <BellRing className="h-4 w-4 text-amber-600" /> : <Bell className="h-4 w-4" />}
-          Notifications
+          اعلان ها
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={loadReminders}>
             <RefreshCcw className="me-2 h-3.5 w-3.5" />
-            Refresh
+            بروزرسانی
           </Button>
           {permission !== "granted" && (
             <Button size="sm" onClick={enableBrowserNotifications}>
-              Enable Browser Alerts
+              فعال سازی اعلان مرورگر
             </Button>
           )}
         </div>
@@ -144,18 +145,18 @@ export function NotificationCenter() {
             <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
           </div>
         ) : count === 0 ? (
-          <p className="text-sm text-muted-foreground">No reminders in the next 24 hours.</p>
+          <p className="text-sm text-muted-foreground">در 24 ساعت آینده یادآوری ثبت نشده است.</p>
         ) : (
           <div className="space-y-2">
             {items.slice(0, 6).map((item) => (
               <div key={item.id} className="rounded-md border border-border/70 p-2">
                 <p className="text-sm font-medium">{item.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.type} | {new Date(item.when).toLocaleString()}
+                  {item.type === "EXAM" ? "امتحان" : "برنامه ریزی"} | {new Date(item.when).toLocaleString("fa-IR")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {item.course ? `Course: ${item.course.name}` : "No course"} |{" "}
-                  {item.semester ? `Semester: ${item.semester.title}` : "No semester"}
+                  {item.course ? `درس: ${item.course.name}` : "بدون درس"} |{" "}
+                  {item.semester ? `ترم: ${item.semester.title}` : "بدون ترم"}
                 </p>
               </div>
             ))}

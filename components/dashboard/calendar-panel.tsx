@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/client-api";
+import { plannerStatusLabel, weekdayLabel } from "@/lib/fa";
 import { toPanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
@@ -127,12 +128,12 @@ export function CalendarPanel() {
       setSemesters(semestersData);
       setCourses(coursesData.items);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load calendar");
+      const parsed = toPanelError(err, "بارگذاری تقویم انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
-      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -244,21 +245,21 @@ export function CalendarPanel() {
         ),
       );
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to move planner item");
-      pushToast({ tone: "error", title: "Move failed", description: parsed.message });
+      const parsed = toPanelError(err, "جابجایی آیتم برنامه ریزی انجام نشد");
+      pushToast({ tone: "error", title: "جابجایی ناموفق بود", description: parsed.message });
     } finally {
       setDraggingPlannerId(null);
     }
   }
 
   function dayLabel(date: Date) {
-    return `${format(date, "EEE")} ${format(date, "dd")}`;
+    return date.toLocaleDateString("fa-IR-u-ca-persian", { weekday: "short", day: "2-digit" });
   }
 
   const rangeLabel =
     viewMode === "week"
-      ? `${format(range.from, "MMM dd")} - ${format(range.to, "MMM dd, yyyy")}`
-      : format(focusDate, "MMMM yyyy");
+      ? `${range.from.toLocaleDateString("fa-IR-u-ca-persian", { month: "long", day: "numeric" })} تا ${range.to.toLocaleDateString("fa-IR-u-ca-persian", { year: "numeric", month: "long", day: "numeric" })}`
+      : focusDate.toLocaleDateString("fa-IR-u-ca-persian", { year: "numeric", month: "long" });
 
   const isMonthView = viewMode === "month";
   const exportUrl = useMemo(() => {
@@ -276,38 +277,38 @@ export function CalendarPanel() {
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Calendar</h2>
-          <p className="text-sm text-muted-foreground">Weekly/monthly planning with drag and drop scheduling.</p>
+          <h2 className="text-2xl font-bold">تقویم</h2>
+          <p className="text-sm text-muted-foreground">نمای هفتگی و ماهانه با امکان جابجایی آیتم های برنامه ریزی</p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline">
-            <a href={exportUrl}>Export ICS</a>
+            <a href={exportUrl}>خروجی تقویم</a>
           </Button>
           <Button variant={viewMode === "week" ? "default" : "outline"} onClick={() => setViewMode("week")}>
-            Week
+            هفتگی
           </Button>
           <Button variant={viewMode === "month" ? "default" : "outline"} onClick={() => setViewMode("month")}>
-            Month
+            ماهانه
           </Button>
           <Button variant="outline" onClick={() => setFocusDate(new Date())}>
-            Today
+            امروز
           </Button>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Search and filter calendar data from backend.</CardDescription>
+          <CardTitle>فیلترها</CardTitle>
+          <CardDescription>جستجو و فیلتر داده های تقویم</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-4">
-          <Input placeholder="Search title/course" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <Input placeholder="جستجو در عنوان یا درس" value={query} onChange={(event) => setQuery(event.target.value)} />
           <select
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
             value={semesterId}
             onChange={(event) => setSemesterId(event.target.value)}
           >
-            <option value="">All semesters</option>
+            <option value="">همه ترم ها</option>
             {semesters.map((semester) => (
               <option key={semester.id} value={semester.id}>
                 {semester.title}
@@ -319,7 +320,7 @@ export function CalendarPanel() {
             value={courseId}
             onChange={(event) => setCourseId(event.target.value)}
           >
-            <option value="">All courses</option>
+            <option value="">همه درس ها</option>
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
                 {course.name}
@@ -333,7 +334,7 @@ export function CalendarPanel() {
           >
             {statusFilters.map((statusItem) => (
               <option key={statusItem || "ALL"} value={statusItem}>
-                {statusItem || "All planner statuses"}
+                {plannerStatusLabel(statusItem)}
               </option>
             ))}
           </select>
@@ -344,7 +345,7 @@ export function CalendarPanel() {
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle>{rangeLabel}</CardTitle>
-            <CardDescription>Drag planner cards to move schedule date.</CardDescription>
+            <CardDescription>برای تغییر تاریخ، کارت برنامه ریزی را بکشید و رها کنید.</CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="icon" onClick={() => moveRange("prev")}>
@@ -390,13 +391,13 @@ export function CalendarPanel() {
                     <div className="space-y-1">
                       {sessions.map((session) => (
                         <div key={`${session.id}-${key}`} className="rounded bg-sky-100 px-2 py-1 text-[11px] text-sky-900">
-                          CLASS {session.startTime} {session.course.code ? `| ${session.course.code}` : ""}
+                          کلاس {session.startTime} {session.course.code ? `| ${session.course.code}` : ""}
                         </div>
                       ))}
 
                       {exams.map((exam) => (
                         <div key={exam.id} className="rounded bg-amber-100 px-2 py-1 text-[11px] text-amber-900">
-                          EXAM {exam.title}
+                          امتحان {exam.title}
                         </div>
                       ))}
 
@@ -406,7 +407,7 @@ export function CalendarPanel() {
                           key={item.id}
                           draggable
                           onDragStart={() => setDraggingPlannerId(item.id)}
-                          className="w-full rounded bg-emerald-100 px-2 py-1 text-left text-[11px] text-emerald-900"
+                          className="w-full rounded bg-emerald-100 px-2 py-1 text-start text-[11px] text-emerald-900"
                           title={`${item.title}${item.course ? ` (${item.course.name})` : ""}`}
                         >
                           {item.title}
@@ -416,7 +417,7 @@ export function CalendarPanel() {
                       {planner.length === 0 && exams.length === 0 && sessions.length === 0 && (
                         <div className="rounded border border-dashed border-border px-2 py-1 text-[11px] text-muted-foreground">
                           <CalendarDays className="me-1 inline h-3 w-3" />
-                          Empty
+                          خالی
                         </div>
                       )}
                     </div>
@@ -430,3 +431,4 @@ export function CalendarPanel() {
     </section>
   );
 }
+

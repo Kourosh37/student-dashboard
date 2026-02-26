@@ -1,4 +1,4 @@
-import * as React from "react";
+﻿import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -6,7 +6,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/60 bg-card text-card-foreground shadow-[0_10px_30px_-20px_hsl(var(--foreground)/0.35)]",
+        "rounded-xl border border-border/90 bg-card text-card-foreground shadow-[0_16px_36px_-20px_hsl(var(--foreground)/0.38)]",
         className,
       )}
       {...props}

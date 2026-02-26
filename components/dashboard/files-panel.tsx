@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -126,14 +126,14 @@ export function FilesPanel() {
       setSemesters(semesterData);
       setPlanner(plannerData.items);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load files");
+      const parsed = toPanelError(err, "بارگذاری فایل ها انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
       pushToast({
         tone: "error",
-        title: "Load failed",
+        title: "بارگذاری ناموفق بود",
         description: parsed.message,
       });
     } finally {
@@ -181,12 +181,12 @@ export function FilesPanel() {
 
       setFolderForm({ name: "", color: "#0F766E", parentId: "", isPinned: false });
       setFolderOpen(false);
-      pushToast({ tone: "success", title: "Folder created" });
+      pushToast({ tone: "success", title: "پوشه ایجاد شد" });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to create folder");
+      const parsed = toPanelError(err, "ایجاد پوشه انجام نشد");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Create folder failed", description: parsed.message });
+      pushToast({ tone: "error", title: "ایجاد پوشه ناموفق بود", description: parsed.message });
     } finally {
       setCreatingFolder(false);
     }
@@ -196,10 +196,10 @@ export function FilesPanel() {
     event.preventDefault();
     if (!selectedFile) {
       setFormError({
-        message: "Select a file first.",
+        message: "ابتدا یک فایل انتخاب کنید.",
         code: "FILE_REQUIRED",
         details: [],
-        fieldErrors: { file: ["Select a file first."] },
+        fieldErrors: { file: ["ابتدا یک فایل انتخاب کنید."] },
         status: 400,
       });
       return;
@@ -228,12 +228,12 @@ export function FilesPanel() {
         isPinned: false,
         tags: "",
       });
-      pushToast({ tone: "success", title: "File uploaded" });
+      pushToast({ tone: "success", title: "فایل آپلود شد" });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Upload failed");
+      const parsed = toPanelError(err, "آپلود ناموفق بود");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Upload failed", description: parsed.message });
+      pushToast({ tone: "error", title: "آپلود ناموفق بود", description: parsed.message });
     } finally {
       setUploading(false);
     }
@@ -247,39 +247,39 @@ export function FilesPanel() {
       });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to update folder");
-      pushToast({ tone: "error", title: "Update failed", description: parsed.message });
+      const parsed = toPanelError(err, "بروزرسانی پوشه انجام نشد");
+      pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     }
   }
 
   async function removeFolder(folderId: string) {
-    if (!window.confirm("Delete this folder?")) return;
+    if (!window.confirm("این پوشه حذف شود؟")) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/folders/${folderId}`, { method: "DELETE" });
       if (selectedFolderId === folderId) {
         setSelectedFolderId("");
       }
-      pushToast({ tone: "success", title: "Folder deleted" });
+      pushToast({ tone: "success", title: "پوشه حذف شد" });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to delete folder");
-      pushToast({ tone: "error", title: "Delete failed", description: parsed.message });
+      const parsed = toPanelError(err, "حذف پوشه انجام نشد");
+      pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     }
   }
 
   async function removeFile(id: string) {
-    if (!window.confirm("Delete this file?")) return;
+    if (!window.confirm("این فایل حذف شود؟")) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/files/${id}`, { method: "DELETE" });
       if (preview?.id === id) {
         setPreview(null);
         setPreviewOpen(false);
       }
-      pushToast({ tone: "success", title: "File deleted" });
+      pushToast({ tone: "success", title: "فایل حذف شد" });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to delete file");
-      pushToast({ tone: "error", title: "Delete failed", description: parsed.message });
+      const parsed = toPanelError(err, "حذف فایل انجام نشد");
+      pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     }
   }
 
@@ -293,8 +293,8 @@ export function FilesPanel() {
       });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to update file");
-      pushToast({ tone: "error", title: "Update failed", description: parsed.message });
+      const parsed = toPanelError(err, "بروزرسانی فایل انجام نشد");
+      pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     }
   }
 
@@ -309,8 +309,8 @@ export function FilesPanel() {
       });
       setPreviewOpen(true);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to open file");
-      pushToast({ tone: "error", title: "Preview failed", description: parsed.message });
+      const parsed = toPanelError(err, "باز کردن فایل انجام نشد");
+      pushToast({ tone: "error", title: "پیش نمایش ناموفق بود", description: parsed.message });
     }
   }
 
@@ -343,11 +343,11 @@ export function FilesPanel() {
             }
           : null,
       );
-      pushToast({ tone: "success", title: "File updated" });
+      pushToast({ tone: "success", title: "فایل بروزرسانی شد" });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to save file");
-      pushToast({ tone: "error", title: "Save failed", description: parsed.message });
+      const parsed = toPanelError(err, "ذخیره فایل انجام نشد");
+      pushToast({ tone: "error", title: "ذخیره ناموفق بود", description: parsed.message });
     } finally {
       setEditingMeta(false);
     }
@@ -365,17 +365,17 @@ export function FilesPanel() {
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">File Manager</h2>
-          <p className="text-sm text-muted-foreground">Folders, files, preview, pin and quick upload with modal dialogs.</p>
+          <h2 className="text-2xl font-bold">مدیریت فایل</h2>
+          <p className="text-sm text-muted-foreground">مدیریت پوشه ها و فایل ها با پیش نمایش، سنجاق و آپلود سریع</p>
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={() => setFolderOpen(true)}>
             <FolderPlus className="me-2 h-4 w-4" />
-            New Folder
+            پوشه جدید
           </Button>
           <Button type="button" onClick={openUploadModal}>
             <UploadCloud className="me-2 h-4 w-4" />
-            Upload File
+            آپلود فایل
           </Button>
         </div>
       </div>
@@ -383,25 +383,25 @@ export function FilesPanel() {
       <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Folders</CardTitle>
+            <CardTitle>پوشه ها</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <button
               type="button"
-              className={`w-full rounded-md border px-3 py-2 text-left text-sm ${selectedFolderId ? "border-border/70" : "border-primary bg-primary/10"}`}
+              className={`w-full rounded-md border px-3 py-2 text-start text-sm ${selectedFolderId ? "border-border/70" : "border-primary bg-primary/10"}`}
               onClick={() => setSelectedFolderId("")}
             >
-              All files
+              همه فایل ها
             </button>
             {folders.map((folder) => (
               <article
                 key={folder.id}
                 className={`rounded-md border p-2 ${selectedFolderId === folder.id ? "border-primary bg-primary/10" : "border-border/70"}`}
               >
-                <button type="button" className="w-full text-left" onClick={() => setSelectedFolderId(folder.id)}>
+                <button type="button" className="w-full text-start" onClick={() => setSelectedFolderId(folder.id)}>
                   <p className="truncate text-sm font-medium">{folder.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Files: {folder._count?.files ?? 0} | Subfolders: {folder._count?.children ?? 0}
+                    فایل ها: {folder._count?.files ?? 0} | زیرپوشه ها: {folder._count?.children ?? 0}
                   </p>
                 </button>
                 <div className="mt-2 flex items-center gap-1">
@@ -419,23 +419,23 @@ export function FilesPanel() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Library</CardTitle>
+            <CardTitle>کتابخانه فایل</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <Input placeholder="Search files" value={query} onChange={(event) => setQuery(event.target.value)} />
+              <Input placeholder="جستجوی فایل" value={query} onChange={(event) => setQuery(event.target.value)} />
               <select
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                 value={mimeGroupFilter}
                 onChange={(event) => setMimeGroupFilter(event.target.value)}
               >
-                <option value="">All types</option>
-                <option value="image">Images</option>
-                <option value="video">Videos</option>
-                <option value="audio">Audio</option>
-                <option value="pdf">PDF</option>
-                <option value="document">Documents</option>
-                <option value="other">Other</option>
+                <option value="">همه نوع فایل</option>
+                <option value="image">تصویر</option>
+                <option value="video">ویدیو</option>
+                <option value="audio">صوت</option>
+                <option value="pdf">پی دی اف</option>
+                <option value="document">اسناد</option>
+                <option value="other">سایر</option>
               </select>
               <select
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
@@ -446,7 +446,7 @@ export function FilesPanel() {
                   setSelectedCourseId("");
                 }}
               >
-                <option value="">All semesters</option>
+                <option value="">همه ترم ها</option>
                 {semesters.map((semester) => (
                   <option key={semester.id} value={semester.id}>
                     {semester.title}
@@ -458,7 +458,7 @@ export function FilesPanel() {
                 value={selectedCourseId}
                 onChange={(event) => setSelectedCourseId(event.target.value)}
               >
-                <option value="">All courses</option>
+                <option value="">همه درس ها</option>
                 {filteredCourses.map((course) => (
                   <option key={course.id} value={course.id}>
                     {course.name}
@@ -472,7 +472,7 @@ export function FilesPanel() {
                 <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
               </div>
             ) : files.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No files found.</p>
+              <p className="text-sm text-muted-foreground">فایلی پیدا نشد.</p>
             ) : (
               <div className="space-y-2">
                 {files.map((file) => (
@@ -484,8 +484,8 @@ export function FilesPanel() {
                           {formatFileSize(file.size)} | {file.mimeType}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {file.folder ? `Folder: ${file.folder.name}` : "No folder"} |{" "}
-                          {file.course ? `Course: ${file.course.name}` : "No course"}
+                          {file.folder ? `پوشه: ${file.folder.name}` : "بدون پوشه"} |{" "}
+                          {file.course ? `درس: ${file.course.name}` : "بدون درس"}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -513,10 +513,10 @@ export function FilesPanel() {
         </Card>
       </div>
 
-      <Modal open={folderOpen} onClose={() => setFolderOpen(false)} title="Create Folder" description="Create folder with optional parent.">
+      <Modal open={folderOpen} onClose={() => setFolderOpen(false)} title="ایجاد پوشه" description="ایجاد پوشه با والد اختیاری">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateFolder}>
           <div className="space-y-2 md:col-span-2">
-            <Label>Folder Name</Label>
+            <Label>نام پوشه</Label>
             <Input
               value={folderForm.name}
               onChange={(event) => setFolderForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -526,13 +526,13 @@ export function FilesPanel() {
             {folderNameError && <p className="text-xs text-destructive">{folderNameError}</p>}
           </div>
           <div className="space-y-2">
-            <Label>Parent</Label>
+            <Label>والد</Label>
             <select
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               value={folderForm.parentId}
               onChange={(event) => setFolderForm((prev) => ({ ...prev, parentId: event.target.value }))}
             >
-              <option value="">Root</option>
+              <option value="">ریشه</option>
               {folders.map((folder) => (
                 <option key={folder.id} value={folder.id}>
                   {folder.name}
@@ -541,7 +541,7 @@ export function FilesPanel() {
             </select>
           </div>
           <div className="space-y-2">
-            <Label>Color</Label>
+            <Label>رنگ</Label>
             <Input
               type="color"
               value={folderForm.color}
@@ -554,7 +554,7 @@ export function FilesPanel() {
               checked={folderForm.isPinned}
               onChange={(event) => setFolderForm((prev) => ({ ...prev, isPinned: event.target.checked }))}
             />
-            Pin folder
+            سنجاق کردن پوشه
           </label>
           <div className="md:col-span-2">
             <Button type="submit" disabled={creatingFolder}>
@@ -565,22 +565,22 @@ export function FilesPanel() {
         </form>
       </Modal>
 
-      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="Upload File" description="All links are optional.">
+      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="آپلود فایل" description="همه اتصال ها اختیاری هستند.">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleUpload}>
           <div className="space-y-2 md:col-span-2">
-            <Label>File</Label>
+            <Label>فایل</Label>
             <Input type="file" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} required />
             {fileError && <p className="text-xs text-destructive">{fileError}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label>Folder (optional)</Label>
+            <Label>پوشه (اختیاری)</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={uploadForm.folderId}
               onChange={(event) => setUploadForm((prev) => ({ ...prev, folderId: event.target.value }))}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {folders.map((folder) => (
                 <option key={folder.id} value={folder.id}>
                   {folder.name}
@@ -590,7 +590,7 @@ export function FilesPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Semester (optional)</Label>
+            <Label>ترم (اختیاری)</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={uploadForm.semesterId}
@@ -599,7 +599,7 @@ export function FilesPanel() {
                 setUploadForm((prev) => ({ ...prev, semesterId, courseId: semesterId ? prev.courseId : "" }));
               }}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {semesters.map((semester) => (
                 <option key={semester.id} value={semester.id}>
                   {semester.title}
@@ -609,13 +609,13 @@ export function FilesPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Course (optional)</Label>
+            <Label>درس (اختیاری)</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={uploadForm.courseId}
               onChange={(event) => setUploadForm((prev) => ({ ...prev, courseId: event.target.value }))}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {courses
                 .filter((course) => !uploadForm.semesterId || course.semesterId === uploadForm.semesterId)
                 .map((course) => (
@@ -627,13 +627,13 @@ export function FilesPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Planner Item (optional)</Label>
+            <Label>آیتم برنامه ریزی (اختیاری)</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={uploadForm.plannerItemId}
               onChange={(event) => setUploadForm((prev) => ({ ...prev, plannerItemId: event.target.value }))}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {planner.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.title}
@@ -643,11 +643,11 @@ export function FilesPanel() {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label>Tags</Label>
+            <Label>برچسب ها</Label>
             <Input
               value={uploadForm.tags}
               onChange={(event) => setUploadForm((prev) => ({ ...prev, tags: event.target.value }))}
-              placeholder="lecture, assignment, important"
+              placeholder="جزوه، تمرین، مهم"
             />
           </div>
 
@@ -657,7 +657,7 @@ export function FilesPanel() {
               checked={uploadForm.isPinned}
               onChange={(event) => setUploadForm((prev) => ({ ...prev, isPinned: event.target.checked }))}
             />
-            Pin file
+            سنجاق کردن فایل
           </label>
           <div className="md:col-span-2">
             <Button type="submit" disabled={uploading}>
@@ -671,7 +671,7 @@ export function FilesPanel() {
       <Modal
         open={previewOpen && Boolean(preview)}
         onClose={() => setPreviewOpen(false)}
-        title={preview ? `Open: ${preview.originalName}` : "Open File"}
+        title={preview ? `باز کردن: ${preview.originalName}` : "باز کردن فایل"}
         description={preview ? `${preview.mimeType} | ${formatFileSize(preview.size)}` : undefined}
         className="max-w-5xl"
       >
@@ -679,18 +679,18 @@ export function FilesPanel() {
           <div className="space-y-4">
             <div className="grid gap-3 rounded-md border border-border/70 p-3 md:grid-cols-3">
               <div className="space-y-2 md:col-span-2">
-                <Label>File Name</Label>
+                <Label>نام فایل</Label>
                 <Input
                   value={previewForm.originalName}
                   onChange={(event) => setPreviewForm((prev) => ({ ...prev, originalName: event.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Tags</Label>
+                <Label>برچسب ها</Label>
                 <Input
                   value={previewForm.tags}
                   onChange={(event) => setPreviewForm((prev) => ({ ...prev, tags: event.target.value }))}
-                  placeholder="tag1, tag2"
+                  placeholder="برچسب 1، برچسب 2"
                 />
               </div>
               <label className="flex items-center gap-2 text-sm">
@@ -699,12 +699,12 @@ export function FilesPanel() {
                   checked={previewForm.isPinned}
                   onChange={(event) => setPreviewForm((prev) => ({ ...prev, isPinned: event.target.checked }))}
                 />
-                Pin file
+                سنجاق کردن فایل
               </label>
               <div>
                 <Button type="button" size="sm" onClick={savePreviewMetadata} disabled={editingMeta}>
                   {editingMeta ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Save className="me-2 h-4 w-4" />}
-                  Save
+                  ذخیره
                 </Button>
               </div>
             </div>
@@ -731,18 +731,18 @@ export function FilesPanel() {
             )}
             {preview.previewType === "office" && (
               <p className="text-sm text-muted-foreground">
-                Office files (DOCX/PPTX/XLSX) are downloadable. Browser inline editing depends on your installed apps.
+                فایل های Office (DOCX/PPTX/XLSX) قابل دانلود هستند. ویرایش مستقیم در مرورگر به برنامه های نصب شده بستگی دارد.
               </p>
             )}
             <div className="flex gap-2">
               <Button asChild>
                 <a href={preview.downloadUrl}>
                   <Download className="me-2 h-4 w-4" />
-                  Download
+                  دانلود
                 </a>
               </Button>
               <Button type="button" variant="outline" onClick={() => window.open(preview.previewUrl, "_blank")}>
-                Open in New Tab
+                باز کردن در تب جدید
               </Button>
             </div>
           </div>
@@ -751,3 +751,7 @@ export function FilesPanel() {
     </section>
   );
 }
+
+
+
+

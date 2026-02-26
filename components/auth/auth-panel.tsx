@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useRouter } from "next/navigation";
@@ -75,7 +75,7 @@ export function AuthPanel() {
         details: parsed.issues.map((issue) => issue.message).filter(Boolean) as string[],
         fieldErrors: parsed.fieldErrors,
       });
-      pushToast({ tone: "error", title: "Sign in failed", description: parsed.message });
+      pushToast({ tone: "error", title: "ورود ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export function AuthPanel() {
         details: parsed.issues.map((issue) => issue.message).filter(Boolean) as string[],
         fieldErrors: parsed.fieldErrors,
       });
-      pushToast({ tone: "error", title: "Registration failed", description: parsed.message });
+      pushToast({ tone: "error", title: "ثبت نام ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -113,8 +113,8 @@ export function AuthPanel() {
         <div className="mx-auto mb-1 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <ShieldCheck className="h-6 w-6" />
         </div>
-        <CardTitle>Student Dashboard</CardTitle>
-        <CardDescription>Sign in to continue</CardDescription>
+        <CardTitle>داشبورد دانشجو</CardTitle>
+        <CardDescription>برای ادامه وارد شوید</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-5 flex rounded-lg bg-muted p-1">
@@ -127,7 +127,7 @@ export function AuthPanel() {
               setError(null);
             }}
           >
-            Login
+            ورود
           </button>
           <button
             type="button"
@@ -138,14 +138,14 @@ export function AuthPanel() {
               setError(null);
             }}
           >
-            Register
+            ثبت نام
           </button>
         </div>
 
         {mode === "login" ? (
           <form className="space-y-4" onSubmit={submitLogin}>
             <div className="space-y-2">
-              <Label htmlFor="login-email">Email</Label>
+              <Label htmlFor="login-email">ایمیل</Label>
               <Input
                 id="login-email"
                 type="email"
@@ -163,7 +163,7 @@ export function AuthPanel() {
               {emailError && <p className="text-xs text-destructive">{emailError}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="login-password">Password</Label>
+              <Label htmlFor="login-password">رمز عبور</Label>
               <Input
                 id="login-password"
                 type="password"
@@ -183,13 +183,13 @@ export function AuthPanel() {
 
             <Button className="w-full" type="submit" disabled={loading}>
               {loading && <LoaderCircle className="me-2 h-4 w-4 animate-spin" />}
-              Sign In
+              ورود
             </Button>
           </form>
         ) : (
           <form className="space-y-4" onSubmit={submitRegister}>
             <div className="space-y-2">
-              <Label htmlFor="register-name">Full Name</Label>
+              <Label htmlFor="register-name">نام کامل</Label>
               <Input
                 id="register-name"
                 type="text"
@@ -207,7 +207,7 @@ export function AuthPanel() {
               {nameError && <p className="text-xs text-destructive">{nameError}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="register-email">Email</Label>
+              <Label htmlFor="register-email">ایمیل</Label>
               <Input
                 id="register-email"
                 type="email"
@@ -225,7 +225,7 @@ export function AuthPanel() {
               {emailError && <p className="text-xs text-destructive">{emailError}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="register-password">Password</Label>
+              <Label htmlFor="register-password">رمز عبور</Label>
               <Input
                 id="register-password"
                 type="password"
@@ -241,14 +241,14 @@ export function AuthPanel() {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Minimum 8 chars with uppercase, lowercase, and number
+                حداقل 8 کاراکتر شامل حرف بزرگ، حرف کوچک و عدد
               </p>
               {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
             </div>
 
             <Button className="w-full" type="submit" disabled={loading}>
               {loading && <LoaderCircle className="me-2 h-4 w-4 animate-spin" />}
-              Create Account
+              ایجاد حساب
             </Button>
           </form>
         )}

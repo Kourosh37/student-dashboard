@@ -1,26 +1,26 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
-  --background: 190 45% 99%;
-  --foreground: 202 37% 11%;
+  --background: 210 36% 97%;
+  --foreground: 215 40% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 202 37% 11%;
+  --card-foreground: 215 40% 12%;
   --popover: 0 0% 100%;
-  --popover-foreground: 202 37% 11%;
-  --primary: 191 95% 34%;
+  --popover-foreground: 215 40% 12%;
+  --primary: 196 90% 35%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 190 45% 93%;
-  --secondary-foreground: 202 37% 11%;
-  --muted: 190 20% 93%;
-  --muted-foreground: 200 12% 40%;
-  --accent: 183 64% 84%;
-  --accent-foreground: 202 37% 11%;
-  --destructive: 2 72% 55%;
+  --secondary: 206 42% 90%;
+  --secondary-foreground: 215 40% 12%;
+  --muted: 206 28% 90%;
+  --muted-foreground: 218 22% 32%;
+  --accent: 190 75% 84%;
+  --accent-foreground: 215 40% 12%;
+  --destructive: 2 72% 48%;
   --destructive-foreground: 0 0% 100%;
-  --border: 190 25% 86%;
-  --input: 190 25% 86%;
-  --ring: 191 95% 34%;
-  --radius: 0.7rem;
+  --border: 214 28% 76%;
+  --input: 214 28% 76%;
+  --ring: 196 90% 35%;
+  --radius: 0.75rem;
 }
 
 @theme inline {
@@ -47,7 +47,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-manrope);
+  --font-sans: var(--font-vazirmatn);
   --font-mono: var(--font-jetbrains-mono);
 }
 
@@ -58,10 +58,21 @@
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  font-family: var(--font-manrope), sans-serif;
+  font-family: var(--font-vazirmatn), sans-serif;
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="rtl"] input[type="email"],
+html[dir="rtl"] input[type="url"],
+html[dir="rtl"] input[type="number"],
+html[dir="rtl"] input[type="datetime-local"],
+html[dir="rtl"] input[type="time"] {
+  direction: ltr;
+  text-align: left;
 }
 
 ::selection {
-  background: hsl(var(--primary) / 0.2);
+  background: hsl(var(--primary) / 0.25);
   color: hsl(var(--foreground));
 }

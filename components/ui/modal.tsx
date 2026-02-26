@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useEffect } from "react";
@@ -40,7 +40,7 @@ export function Modal({ open, onClose, title, description, children, className }
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        aria-label="Close"
+        aria-label="بستن"
         className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
         onClick={onClose}
       />
@@ -59,3 +59,4 @@ export function Modal({ open, onClose, title, description, children, className }
     </div>
   );
 }
+

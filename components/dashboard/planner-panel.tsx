@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/client-api";
+import { formatDateTime, plannerPriorityLabel, plannerStatusLabel } from "@/lib/fa";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
@@ -74,12 +75,12 @@ export function PlannerPanel() {
       setCourses(courseData.items);
       setSemesters(semesterData);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load planner");
+      const parsed = toPanelError(err, "بارگذاری برنامه ریزی انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
-      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -124,12 +125,12 @@ export function PlannerPanel() {
         isPinned: false,
       });
       setCreateOpen(false);
-      pushToast({ tone: "success", title: "Planner item created" });
+      pushToast({ tone: "success", title: "آیتم برنامه ریزی ایجاد شد" });
       await loadAll();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to create planner item");
+      const parsed = toPanelError(err, "ایجاد آیتم برنامه ریزی انجام نشد");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Create failed", description: parsed.message });
+      pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsed.message });
     } finally {
       setSaving(false);
     }
@@ -143,20 +144,20 @@ export function PlannerPanel() {
       });
       setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to update planner item");
-      pushToast({ tone: "error", title: "Update failed", description: parsed.message });
+      const parsed = toPanelError(err, "بروزرسانی آیتم برنامه ریزی انجام نشد");
+      pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     }
   }
 
   async function removeItem(id: string) {
-    if (!window.confirm("Delete this planner item?")) return;
+    if (!window.confirm("این آیتم برنامه ریزی حذف شود؟")) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/planner/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((item) => item.id !== id));
-      pushToast({ tone: "success", title: "Planner item deleted" });
+      pushToast({ tone: "success", title: "آیتم برنامه ریزی حذف شد" });
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to delete planner item");
-      pushToast({ tone: "error", title: "Delete failed", description: parsed.message });
+      const parsed = toPanelError(err, "حذف آیتم برنامه ریزی انجام نشد");
+      pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     }
   }
 
@@ -166,29 +167,29 @@ export function PlannerPanel() {
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold">Planner</h2>
+        <h2 className="text-2xl font-bold">برنامه ریزی</h2>
         <Button type="button" onClick={() => setCreateOpen(true)}>
           <Plus className="me-2 h-4 w-4" />
-          New Planner Item
+          آیتم جدید
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Planner Items</CardTitle>
+          <CardTitle>آیتم های برنامه ریزی</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-[1fr_220px_220px]">
-            <Input placeholder="Search planner items" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <Input placeholder="جستجوی آیتم ها" value={query} onChange={(event) => setQuery(event.target.value)} />
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as "" | PlannerStatus)}
             >
-              <option value="">All statuses</option>
+              <option value="">{plannerStatusLabel("")}</option>
               {statusOptions.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {plannerStatusLabel(status)}
                 </option>
               ))}
             </select>
@@ -197,7 +198,7 @@ export function PlannerPanel() {
               value={semesterFilter}
               onChange={(event) => setSemesterFilter(event.target.value)}
             >
-              <option value="">All semesters</option>
+              <option value="">همه ترم ها</option>
               {semesters.map((semester) => (
                 <option key={semester.id} value={semester.id}>
                   {semester.title}
@@ -211,7 +212,7 @@ export function PlannerPanel() {
               <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No planner items found.</p>
+            <p className="text-sm text-muted-foreground">آیتمی پیدا نشد.</p>
           ) : (
             <div className="space-y-3">
               {items.map((item) => (
@@ -221,11 +222,11 @@ export function PlannerPanel() {
                       <p className="font-semibold">{item.title}</p>
                       {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <Badge variant="secondary">{item.status}</Badge>
-                        <Badge variant={item.priority === "URGENT" ? "warning" : "outline"}>{item.priority}</Badge>
+                        <Badge variant="secondary">{plannerStatusLabel(item.status)}</Badge>
+                        <Badge variant={item.priority === "URGENT" ? "warning" : "outline"}>{plannerPriorityLabel(item.priority)}</Badge>
                         {item.semester && <Badge variant="outline">{item.semester.title}</Badge>}
                         {item.course && <Badge variant="outline">{item.course.name}</Badge>}
-                        {item.dueAt && <Badge variant="outline">Due: {new Date(item.dueAt).toLocaleString()}</Badge>}
+                        {item.dueAt && <Badge variant="outline">مهلت: {formatDateTime(item.dueAt)}</Badge>}
                       </div>
                     </div>
 
@@ -237,7 +238,7 @@ export function PlannerPanel() {
                       >
                         {statusOptions.map((status) => (
                           <option key={status} value={status}>
-                            {status}
+                            {plannerStatusLabel(status)}
                           </option>
                         ))}
                       </select>
@@ -256,10 +257,10 @@ export function PlannerPanel() {
         </CardContent>
       </Card>
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Planner Item" description="Create task in a popup dialog.">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="ایجاد آیتم برنامه ریزی" description="ایجاد کار در پنجره پاپ آپ">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={createItem}>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="planner-title">Title</Label>
+            <Label htmlFor="planner-title">عنوان</Label>
             <Input
               id="planner-title"
               value={form.title}
@@ -271,7 +272,7 @@ export function PlannerPanel() {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="planner-description">Description</Label>
+            <Label htmlFor="planner-description">توضیحات</Label>
             <Textarea
               id="planner-description"
               value={form.description}
@@ -282,7 +283,7 @@ export function PlannerPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>وضعیت</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.status}
@@ -290,14 +291,14 @@ export function PlannerPanel() {
             >
               {statusOptions.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {plannerStatusLabel(status)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Priority</Label>
+            <Label>اولویت</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.priority}
@@ -305,20 +306,20 @@ export function PlannerPanel() {
             >
               {priorityOptions.map((priority) => (
                 <option key={priority} value={priority}>
-                  {priority}
+                  {plannerPriorityLabel(priority)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Semester</Label>
+            <Label>ترم</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.semesterId}
               onChange={(event) => setForm((prev) => ({ ...prev, semesterId: event.target.value, courseId: "" }))}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {semesters.map((semester) => (
                 <option key={semester.id} value={semester.id}>
                   {semester.title}
@@ -328,13 +329,13 @@ export function PlannerPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Course</Label>
+            <Label>درس</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.courseId}
               onChange={(event) => setForm((prev) => ({ ...prev, courseId: event.target.value }))}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {availableCourses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.name}
@@ -344,24 +345,24 @@ export function PlannerPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Start At</Label>
+            <Label>شروع</Label>
             <Input type="datetime-local" value={form.startAt} onChange={(event) => setForm((prev) => ({ ...prev, startAt: event.target.value }))} />
           </div>
 
           <div className="space-y-2">
-            <Label>Due At</Label>
+            <Label>مهلت</Label>
             <Input type="datetime-local" value={form.dueAt} onChange={(event) => setForm((prev) => ({ ...prev, dueAt: event.target.value }))} />
           </div>
 
           <label className="flex items-center gap-2 text-sm md:col-span-2">
             <input type="checkbox" checked={form.isPinned} onChange={(event) => setForm((prev) => ({ ...prev, isPinned: event.target.checked }))} />
-            Pin item
+            سنجاق کردن آیتم
           </label>
 
           <div className="md:col-span-2">
             <Button type="submit" disabled={saving}>
               {saving ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Plus className="me-2 h-4 w-4" />}
-              Create
+              ایجاد
             </Button>
           </div>
         </form>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/client-api";
+import { formatDate, formatDateTime, weekdayLabel } from "@/lib/fa";
 import { toPanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
@@ -49,13 +50,13 @@ export function OverviewPanel() {
       const summary = await apiFetch<SummaryResponse>("/api/v1/dashboard/summary");
       setData(summary);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load dashboard");
+      const parsed = toPanelError(err, "بارگذاری داشبورد انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
       setLoadFailed(true);
-      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -98,10 +99,10 @@ export function OverviewPanel() {
   if (loadFailed) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-muted-foreground">Unable to load dashboard data.</p>
+        <p className="text-sm text-muted-foreground">داده های داشبورد بارگذاری نشد.</p>
         <Button variant="outline" onClick={loadData}>
           <RotateCw className="me-2 h-4 w-4" />
-          Retry
+          تلاش دوباره
         </Button>
       </div>
     );
@@ -110,26 +111,27 @@ export function OverviewPanel() {
   if (!data) return null;
 
   const currentSemester = data.semesters.find((item) => item.isCurrent) ?? null;
+  const pinnedFiles = data.recentFiles.filter((file) => file.isPinned);
 
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Student Dashboard</h2>
-        <p className="text-sm text-muted-foreground">Academic overview with planning, schedule, exams, and files.</p>
+        <h2 className="text-2xl font-bold">داشبورد دانشجو</h2>
+        <p className="text-sm text-muted-foreground">نمای کلی برنامه ریزی، کلاس ها، امتحانات و فایل ها</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatsCard title="Planner Tasks" value={data.planner.total} icon={<CheckCircle2 className="h-4 w-4" />} />
-        <StatsCard title="Upcoming Exams" value={data.upcomingExams.length} icon={<GraduationCap className="h-4 w-4" />} />
-        <StatsCard title="Class Sessions" value={data.todaySchedule.length} icon={<CalendarClock className="h-4 w-4" />} />
-        <StatsCard title="Recent Files" value={data.recentFiles.length} icon={<FileUp className="h-4 w-4" />} />
+        <StatsCard title="کارهای برنامه ریزی" value={data.planner.total} icon={<CheckCircle2 className="h-4 w-4" />} />
+        <StatsCard title="امتحانات پیش رو" value={data.upcomingExams.length} icon={<GraduationCap className="h-4 w-4" />} />
+        <StatsCard title="جلسه های کلاسی" value={data.todaySchedule.length} icon={<CalendarClock className="h-4 w-4" />} />
+        <StatsCard title="فایل های اخیر" value={data.recentFiles.length} icon={<FileUp className="h-4 w-4" />} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Current Semester</CardTitle>
-            <CardDescription>{currentSemester ? "Active academic term" : "No current semester selected"}</CardDescription>
+            <CardTitle>ترم جاری</CardTitle>
+            <CardDescription>{currentSemester ? "ترم فعال" : "ترم فعالی انتخاب نشده است"}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {currentSemester ? (
@@ -137,21 +139,21 @@ export function OverviewPanel() {
                 <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
                   <p className="font-semibold">{currentSemester.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(currentSemester.startDate).toLocaleDateString()} - {new Date(currentSemester.endDate).toLocaleDateString()}
+                    {formatDate(currentSemester.startDate)} تا {formatDate(currentSemester.endDate)}
                   </p>
                 </div>
-                <p className="text-sm text-muted-foreground">Total semesters: {data.semesters.length}</p>
+                <p className="text-sm text-muted-foreground">تعداد کل ترم ها: {data.semesters.length}</p>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">Create a semester to start organizing classes and exams.</p>
+              <p className="text-sm text-muted-foreground">برای شروع مدیریت درس ها و امتحانات، یک ترم ایجاد کنید.</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Profile Snapshot</CardTitle>
-            <CardDescription>Student identity and academic context</CardDescription>
+            <CardTitle>خلاصه پروفایل</CardTitle>
+            <CardDescription>اطلاعات هویتی و تحصیلی</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="mb-3">
@@ -159,33 +161,33 @@ export function OverviewPanel() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={data.profile.avatarUrl}
-                  alt="Profile avatar"
+                  alt="تصویر پروفایل"
                   className="h-20 w-20 rounded-full border border-border object-cover"
                 />
               ) : (
                 <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground">
-                  No photo
+                  بدون عکس
                 </div>
               )}
             </div>
             <p className="text-sm">
-              <span className="text-muted-foreground">Name: </span>
+              <span className="text-muted-foreground">نام: </span>
               {data.profile?.name ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Student ID: </span>
+              <span className="text-muted-foreground">شماره دانشجویی: </span>
               {data.profile?.studentId ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">University: </span>
+              <span className="text-muted-foreground">دانشگاه: </span>
               {data.profile?.university ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Major: </span>
+              <span className="text-muted-foreground">رشته: </span>
               {data.profile?.major ?? "-"}
             </p>
             <p className="text-sm">
-              <span className="text-muted-foreground">Current Term: </span>
+              <span className="text-muted-foreground">ترم فعلی: </span>
               {data.profile?.currentTerm ?? "-"}
             </p>
           </CardContent>
@@ -195,16 +197,16 @@ export function OverviewPanel() {
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-1">
           <CardHeader>
-            <CardTitle>Upcoming Exams</CardTitle>
+            <CardTitle>امتحانات پیش رو</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.upcomingExams.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming exams.</p>
+              <p className="text-sm text-muted-foreground">امتحان ثبت نشده است.</p>
             ) : (
               data.upcomingExams.slice(0, 5).map((exam) => (
                 <div key={exam.id} className="rounded-md border border-border/70 p-2">
                   <p className="text-sm font-medium">{exam.title}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(exam.examDate).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">{formatDateTime(exam.examDate)}</p>
                   {exam.course && <Badge variant="outline">{exam.course.name}</Badge>}
                 </div>
               ))
@@ -214,11 +216,11 @@ export function OverviewPanel() {
 
         <Card className="xl:col-span-1">
           <CardHeader>
-            <CardTitle>Weekly Schedule</CardTitle>
+            <CardTitle>برنامه هفتگی</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {data.todaySchedule.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No class sessions found.</p>
+              <p className="text-sm text-muted-foreground">جلسه کلاسی ثبت نشده است.</p>
             ) : (
               data.todaySchedule.slice(0, 8).map((entry) => (
                 <div key={entry.sessionId} className="rounded-md border border-border/70 p-2">
@@ -226,9 +228,9 @@ export function OverviewPanel() {
                     {entry.course.name} {entry.course.code ? `(${entry.course.code})` : ""}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {entry.weekday} | {entry.startTime}-{entry.endTime}
+                    {weekdayLabel(entry.weekday)} | {entry.startTime}-{entry.endTime}
                   </p>
-                  <p className="text-xs text-muted-foreground">{entry.room ?? "No room"}</p>
+                  <p className="text-xs text-muted-foreground">{entry.room ?? "بدون کلاس"}</p>
                 </div>
               ))
             )}
@@ -237,27 +239,21 @@ export function OverviewPanel() {
 
         <Card className="xl:col-span-1">
           <CardHeader>
-            <CardTitle>Pinned Files</CardTitle>
+            <CardTitle>فایل های سنجاق شده</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {data.recentFiles.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No files yet.</p>
+            {pinnedFiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">فایل سنجاق شده ای وجود ندارد.</p>
             ) : (
-              data.recentFiles
-                .filter((file) => file.isPinned)
-                .slice(0, 8)
-                .map((file) => (
-                  <div key={file.id} className="rounded-md border border-border/70 p-2">
-                    <p className="text-sm font-medium">{file.originalName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatFileSize(file.size)} | {new Date(file.createdAt).toLocaleString()}
-                    </p>
-                    {file.folder && <p className="text-xs text-muted-foreground">Folder: {file.folder.name}</p>}
-                  </div>
-                ))
-            )}
-            {data.recentFiles.filter((file) => file.isPinned).length === 0 && (
-              <p className="text-sm text-muted-foreground">No pinned files yet.</p>
+              pinnedFiles.slice(0, 8).map((file) => (
+                <div key={file.id} className="rounded-md border border-border/70 p-2">
+                  <p className="text-sm font-medium">{file.originalName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatFileSize(file.size)} | {formatDateTime(file.createdAt)}
+                  </p>
+                  {file.folder && <p className="text-xs text-muted-foreground">پوشه: {file.folder.name}</p>}
+                </div>
+              ))
             )}
           </CardContent>
         </Card>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { apiFetch } from "@/lib/client-api";
+import { examStatusLabel, examTypeLabel, formatDateTime } from "@/lib/fa";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
@@ -74,12 +75,12 @@ export function ExamsPanel() {
       setCourses(courseData.items);
       setSemesters(semesterData);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load exams");
+      const parsed = toPanelError(err, "بارگذاری امتحانات انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
-      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -129,12 +130,12 @@ export function ExamsPanel() {
         isPinned: false,
       });
       setCreateOpen(false);
-      pushToast({ tone: "success", title: "Exam created" });
+      pushToast({ tone: "success", title: "امتحان ایجاد شد" });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to create exam");
+      const parsed = toPanelError(err, "ایجاد امتحان انجام نشد");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Create failed", description: parsed.message });
+      pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsed.message });
     } finally {
       setSaving(false);
     }
@@ -148,20 +149,20 @@ export function ExamsPanel() {
       });
       setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to update exam");
-      pushToast({ tone: "error", title: "Update failed", description: parsed.message });
+      const parsed = toPanelError(err, "بروزرسانی امتحان انجام نشد");
+      pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     }
   }
 
   async function removeExam(id: string) {
-    if (!window.confirm("Delete this exam?")) return;
+    if (!window.confirm("این امتحان حذف شود؟")) return;
     try {
       await apiFetch<{ deleted: boolean }>(`/api/v1/exams/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((item) => item.id !== id));
-      pushToast({ tone: "success", title: "Exam deleted" });
+      pushToast({ tone: "success", title: "امتحان حذف شد" });
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to delete exam");
-      pushToast({ tone: "error", title: "Delete failed", description: parsed.message });
+      const parsed = toPanelError(err, "حذف امتحان انجام نشد");
+      pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     }
   }
 
@@ -171,29 +172,29 @@ export function ExamsPanel() {
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold">Exams</h2>
+        <h2 className="text-2xl font-bold">امتحانات</h2>
         <Button type="button" onClick={() => setCreateOpen(true)}>
           <Plus className="me-2 h-4 w-4" />
-          New Exam
+          امتحان جدید
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Exam List</CardTitle>
+          <CardTitle>لیست امتحانات</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-[1fr_220px]">
-            <Input placeholder="Search exams" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <Input placeholder="جستجوی امتحان" value={query} onChange={(event) => setQuery(event.target.value)} />
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value as "" | ExamStatus)}
             >
-              <option value="">All statuses</option>
+              <option value="">{examStatusLabel("")}</option>
               {examStatusOptions.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {examStatusLabel(status)}
                 </option>
               ))}
             </select>
@@ -204,7 +205,7 @@ export function ExamsPanel() {
               <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No exams found.</p>
+            <p className="text-sm text-muted-foreground">امتحانی پیدا نشد.</p>
           ) : (
             <div className="space-y-3">
               {items.map((exam) => (
@@ -212,10 +213,10 @@ export function ExamsPanel() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold">{exam.title}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(exam.examDate).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateTime(exam.examDate)}</p>
                       <div className="mt-1 flex flex-wrap gap-2">
-                        <Badge variant="secondary">{exam.examType}</Badge>
-                        <Badge variant="outline">{exam.status}</Badge>
+                        <Badge variant="secondary">{examTypeLabel(exam.examType)}</Badge>
+                        <Badge variant="outline">{examStatusLabel(exam.status)}</Badge>
                         {exam.course && <Badge variant="outline">{exam.course.name}</Badge>}
                         {exam.location && <Badge variant="outline">{exam.location}</Badge>}
                       </div>
@@ -228,7 +229,7 @@ export function ExamsPanel() {
                       >
                         {examStatusOptions.map((status) => (
                           <option key={status} value={status}>
-                            {status}
+                            {examStatusLabel(status)}
                           </option>
                         ))}
                       </select>
@@ -247,22 +248,22 @@ export function ExamsPanel() {
         </CardContent>
       </Card>
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Exam" description="Create exam in popup dialog.">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="ایجاد امتحان" description="ایجاد امتحان در پنجره پاپ آپ">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={createExam}>
           <div className="space-y-2 md:col-span-2">
-            <Label>Title</Label>
+            <Label>عنوان</Label>
             <Input value={form.title} onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))} aria-invalid={Boolean(titleError)} required />
             {titleError && <p className="text-xs text-destructive">{titleError}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label>Semester</Label>
+            <Label>ترم</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.semesterId}
               onChange={(event) => setForm((prev) => ({ ...prev, semesterId: event.target.value, courseId: "" }))}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {semesters.map((semester) => (
                 <option key={semester.id} value={semester.id}>
                   {semester.title}
@@ -272,13 +273,13 @@ export function ExamsPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Course</Label>
+            <Label>درس</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.courseId}
               onChange={(event) => setForm((prev) => ({ ...prev, courseId: event.target.value }))}
             >
-              <option value="">None</option>
+              <option value="">هیچ کدام</option>
               {availableCourses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.name}
@@ -288,7 +289,7 @@ export function ExamsPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label>نوع</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.examType}
@@ -296,14 +297,14 @@ export function ExamsPanel() {
             >
               {examTypeOptions.map((type) => (
                 <option key={type} value={type}>
-                  {type}
+                  {examTypeLabel(type)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Status</Label>
+            <Label>وضعیت</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={form.status}
@@ -311,14 +312,14 @@ export function ExamsPanel() {
             >
               {examStatusOptions.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {examStatusLabel(status)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <Label>Exam Date & Time</Label>
+            <Label>تاریخ و زمان امتحان</Label>
             <Input
               type="datetime-local"
               value={form.examDate}
@@ -330,12 +331,12 @@ export function ExamsPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Start Time</Label>
+            <Label>ساعت شروع</Label>
             <Input type="time" value={form.startTime} onChange={(event) => setForm((prev) => ({ ...prev, startTime: event.target.value }))} />
           </div>
 
           <div className="space-y-2">
-            <Label>Duration (minutes)</Label>
+            <Label>مدت زمان (دقیقه)</Label>
             <Input
               type="number"
               min={0}
@@ -346,24 +347,24 @@ export function ExamsPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>Location</Label>
+            <Label>مکان</Label>
             <Input value={form.location} onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))} />
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label>Notes</Label>
+            <Label>یادداشت</Label>
             <Textarea value={form.notes} onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))} />
           </div>
 
           <label className="flex items-center gap-2 text-sm md:col-span-2">
             <input type="checkbox" checked={form.isPinned} onChange={(event) => setForm((prev) => ({ ...prev, isPinned: event.target.checked }))} />
-            Pin exam
+            سنجاق کردن امتحان
           </label>
 
           <div className="md:col-span-2">
             <Button type="submit" disabled={saving}>
               {saving ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Plus className="me-2 h-4 w-4" />}
-              Create Exam
+              ایجاد امتحان
             </Button>
           </div>
         </form>

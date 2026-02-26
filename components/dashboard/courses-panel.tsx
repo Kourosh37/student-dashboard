@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/client-api";
+import { weekdayLabel } from "@/lib/fa";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
@@ -75,12 +76,12 @@ export function CoursesPanel() {
       setItems(coursesData.items);
       setSemesters(semesterData);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load courses");
+      const parsed = toPanelError(err, "بارگذاری درس ها انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
-      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -133,12 +134,12 @@ export function CoursesPanel() {
         isPinned: false,
       });
       setSessions([{ weekday: "MONDAY", startTime: "09:00", endTime: "10:30", room: "" }]);
-      pushToast({ tone: "success", title: "Course created" });
+      pushToast({ tone: "success", title: "درس ایجاد شد" });
       await loadData();
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to create course");
+      const parsed = toPanelError(err, "ایجاد درس انجام نشد");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Create failed", description: parsed.message });
+      pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsed.message });
     } finally {
       setSaving(false);
     }
@@ -154,8 +155,8 @@ export function CoursesPanel() {
       });
       setItems((prev) => prev.map((entry) => (entry.id === item.id ? updated : entry)));
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to update course");
-      pushToast({ tone: "error", title: "Update failed", description: parsed.message });
+      const parsed = toPanelError(err, "بروزرسانی درس انجام نشد");
+      pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     }
   }
 
@@ -164,8 +165,8 @@ export function CoursesPanel() {
       await apiFetch<{ deleted: boolean }>(`/api/v1/courses/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to delete course");
-      pushToast({ tone: "error", title: "Delete failed", description: parsed.message });
+      const parsed = toPanelError(err, "حذف درس انجام نشد");
+      pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     }
   }
 
@@ -175,25 +176,25 @@ export function CoursesPanel() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Courses</h2>
+        <h2 className="text-2xl font-bold">درس ها</h2>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Create Course</CardTitle>
-          <CardDescription>Add classes and weekly class hours.</CardDescription>
+          <CardTitle>ایجاد درس</CardTitle>
+          <CardDescription>افزودن درس و ساعت های کلاسی هفتگی</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={createCourse}>
             <div className="space-y-2">
-              <Label>Semester</Label>
+              <Label>ترم</Label>
               <select
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm"
                 value={form.semesterId}
                 onChange={(event) => setForm((prev) => ({ ...prev, semesterId: event.target.value }))}
                 required
               >
-                <option value="">Select semester</option>
+                <option value="">انتخاب ترم</option>
                 {filteredSemesters.map((semester) => (
                   <option key={semester.id} value={semester.id}>
                     {semester.title}
@@ -204,7 +205,7 @@ export function CoursesPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Course Name</Label>
+              <Label>نام درس</Label>
               <Input
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -215,12 +216,12 @@ export function CoursesPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Code</Label>
+              <Label>کد</Label>
               <Input value={form.code} onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))} />
             </div>
 
             <div className="space-y-2">
-              <Label>Instructor</Label>
+              <Label>استاد</Label>
               <Input
                 value={form.instructor}
                 onChange={(event) => setForm((prev) => ({ ...prev, instructor: event.target.value }))}
@@ -228,7 +229,7 @@ export function CoursesPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Location</Label>
+              <Label>مکان</Label>
               <Input
                 value={form.location}
                 onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))}
@@ -236,7 +237,7 @@ export function CoursesPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Credits</Label>
+              <Label>واحد</Label>
               <Input
                 type="number"
                 min={0}
@@ -247,7 +248,7 @@ export function CoursesPanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label>رنگ</Label>
               <Input
                 type="color"
                 value={form.color}
@@ -261,12 +262,12 @@ export function CoursesPanel() {
                 checked={form.isPinned}
                 onChange={(event) => setForm((prev) => ({ ...prev, isPinned: event.target.checked }))}
               />
-              Pin course
+              سنجاق کردن درس
             </label>
 
             <div className="space-y-3 md:col-span-2">
               <div className="flex items-center justify-between">
-                <Label>Class Sessions</Label>
+                <Label>جلسه های کلاسی</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -276,7 +277,7 @@ export function CoursesPanel() {
                   }
                 >
                   <PlusCircle className="me-2 h-4 w-4" />
-                  Add Session
+                  افزودن جلسه
                 </Button>
               </div>
               <div className="space-y-2">
@@ -293,7 +294,7 @@ export function CoursesPanel() {
                     >
                       {weekdayOptions.map((weekday) => (
                         <option key={weekday} value={weekday}>
-                          {weekday}
+                          {weekdayLabel(weekday)}
                         </option>
                       ))}
                     </select>
@@ -316,7 +317,7 @@ export function CoursesPanel() {
                       }
                     />
                     <Input
-                      placeholder="Room"
+                      placeholder="کلاس"
                       value={session.room}
                       onChange={(event) =>
                         setSessions((prev) =>
@@ -341,7 +342,7 @@ export function CoursesPanel() {
             <div className="md:col-span-2">
               <Button type="submit" disabled={saving}>
                 {saving ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Plus className="me-2 h-4 w-4" />}
-                Create Course
+                ایجاد درس
               </Button>
             </div>
           </form>
@@ -350,17 +351,17 @@ export function CoursesPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Course List</CardTitle>
+          <CardTitle>لیست درس ها</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-[1fr_260px]">
-            <Input placeholder="Search courses" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <Input placeholder="جستجوی درس" value={query} onChange={(event) => setQuery(event.target.value)} />
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={semesterFilter}
               onChange={(event) => setSemesterFilter(event.target.value)}
             >
-              <option value="">All semesters</option>
+              <option value="">همه ترم ها</option>
               {semesters.map((semester) => (
                 <option key={semester.id} value={semester.id}>
                   {semester.title}
@@ -374,7 +375,7 @@ export function CoursesPanel() {
               <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No courses found.</p>
+            <p className="text-sm text-muted-foreground">درسی پیدا نشد.</p>
           ) : (
             <div className="space-y-3">
               {items.map((course) => (
@@ -385,12 +386,11 @@ export function CoursesPanel() {
                         {course.name} {course.code ? `(${course.code})` : ""}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {course.semester?.title ?? "No semester"} | {course.instructor ?? "No instructor"} |{" "}
-                        {course.location ?? "No location"}
+                        {course.semester?.title ?? "بدون ترم"} | {course.instructor ?? "بدون استاد"} |{" "}
+                        {course.location ?? "بدون مکان"}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Sessions: {(course.sessions as CourseSession[] | undefined)?.length ?? 0} | Files:{" "}
-                        {course._count?.files ?? 0}
+                        جلسات: {(course.sessions as CourseSession[] | undefined)?.length ?? 0} | فایل ها: {course._count?.files ?? 0}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">

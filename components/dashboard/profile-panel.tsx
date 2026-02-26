@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -51,12 +51,12 @@ export function ProfilePanel() {
       const data = await apiFetch<UserProfile>("/api/v1/profile");
       hydrateProfile(data);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load profile");
+      const parsed = toPanelError(err, "بارگذاری پروفایل انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
-      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -83,11 +83,11 @@ export function ProfilePanel() {
         }),
       });
       hydrateProfile(updated);
-      pushToast({ tone: "success", title: "Profile updated" });
+      pushToast({ tone: "success", title: "پروفایل بروزرسانی شد" });
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to update profile");
+      const parsed = toPanelError(err, "بروزرسانی پروفایل انجام نشد");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Update failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     } finally {
       setSaving(false);
     }
@@ -96,10 +96,10 @@ export function ProfilePanel() {
   async function uploadAvatar() {
     if (!avatarFile) {
       setFormError({
-        message: "Select an image file to upload.",
+        message: "یک فایل تصویر برای آپلود انتخاب کنید.",
         code: "FILE_REQUIRED",
         details: [],
-        fieldErrors: { file: ["Select an image file to upload."] },
+        fieldErrors: { file: ["یک فایل تصویر برای آپلود انتخاب کنید."] },
         status: 400,
       });
       return;
@@ -115,11 +115,11 @@ export function ProfilePanel() {
       hydrateProfile(updated);
       setAvatarFile(null);
       setAvatarInputVersion((value) => value + 1);
-      pushToast({ tone: "success", title: "Profile photo updated" });
+      pushToast({ tone: "success", title: "عکس پروفایل بروزرسانی شد" });
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to upload profile photo");
+      const parsed = toPanelError(err, "آپلود عکس پروفایل انجام نشد");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Upload failed", description: parsed.message });
+      pushToast({ tone: "error", title: "آپلود ناموفق بود", description: parsed.message });
     } finally {
       setAvatarBusy(false);
     }
@@ -134,11 +134,11 @@ export function ProfilePanel() {
       hydrateProfile(updated);
       setAvatarFile(null);
       setAvatarInputVersion((value) => value + 1);
-      pushToast({ tone: "success", title: "Profile photo removed" });
+      pushToast({ tone: "success", title: "عکس پروفایل حذف شد" });
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to remove profile photo");
+      const parsed = toPanelError(err, "حذف عکس پروفایل انجام نشد");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "Remove failed", description: parsed.message });
+      pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     } finally {
       setAvatarBusy(false);
     }
@@ -158,13 +158,13 @@ export function ProfilePanel() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Profile</h2>
+        <h2 className="text-2xl font-bold">پروفایل</h2>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Student Profile</CardTitle>
-          <CardDescription>Maintain your student identity and academic information.</CardDescription>
+          <CardTitle>پروفایل دانشجو</CardTitle>
+          <CardDescription>اطلاعات هویتی و تحصیلی خود را مدیریت کنید.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-6 rounded-lg border border-border/70 p-4">
@@ -173,23 +173,23 @@ export function ProfilePanel() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profile.avatarUrl}
-                  alt="Profile avatar"
+                  alt="تصویر پروفایل"
                   className="h-20 w-20 rounded-full border border-border object-cover"
                 />
               ) : (
                 <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground">
-                  No photo
+                  بدون عکس
                 </div>
               )}
               <div className="flex-1 space-y-2">
-                <Label>Profile Photo</Label>
+                <Label>عکس پروفایل</Label>
                 <Input
                   key={`avatar-input-${avatarInputVersion}`}
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                   onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
                 />
-                <p className="text-xs text-muted-foreground">Accepted: JPG, PNG, WEBP, GIF, AVIF. Max size: 5MB.</p>
+                <p className="text-xs text-muted-foreground">فرمت های مجاز: JPG، PNG، WEBP، GIF، AVIF. حداکثر حجم: 5MB</p>
                 {avatarFileError && <p className="text-xs text-destructive">{avatarFileError}</p>}
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" onClick={uploadAvatar} disabled={avatarBusy || !avatarFile}>
@@ -198,11 +198,11 @@ export function ProfilePanel() {
                     ) : (
                       <UploadCloud className="me-2 h-4 w-4" />
                     )}
-                    Upload Photo
+                    آپلود عکس
                   </Button>
                   <Button type="button" variant="outline" onClick={removeAvatar} disabled={avatarBusy || !profile?.avatarUrl}>
                     <Trash2 className="me-2 h-4 w-4" />
-                    Remove Photo
+                    حذف عکس
                   </Button>
                 </div>
               </div>
@@ -211,7 +211,7 @@ export function ProfilePanel() {
 
           <form className="grid gap-4 md:grid-cols-2" onSubmit={saveProfile}>
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>نام</Label>
               <Input
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -222,12 +222,12 @@ export function ProfilePanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Student ID</Label>
+              <Label>شماره دانشجویی</Label>
               <Input value={form.studentId} onChange={(event) => setForm((prev) => ({ ...prev, studentId: event.target.value }))} />
             </div>
 
             <div className="space-y-2">
-              <Label>University</Label>
+              <Label>دانشگاه</Label>
               <Input
                 value={form.university}
                 onChange={(event) => setForm((prev) => ({ ...prev, university: event.target.value }))}
@@ -235,12 +235,12 @@ export function ProfilePanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>Major</Label>
+              <Label>رشته</Label>
               <Input value={form.major} onChange={(event) => setForm((prev) => ({ ...prev, major: event.target.value }))} />
             </div>
 
             <div className="space-y-2">
-              <Label>Current Term</Label>
+              <Label>ترم فعلی</Label>
               <Input
                 value={form.currentTerm}
                 onChange={(event) => setForm((prev) => ({ ...prev, currentTerm: event.target.value }))}
@@ -248,14 +248,14 @@ export function ProfilePanel() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label>Bio</Label>
+              <Label>درباره من</Label>
               <Textarea value={form.bio} onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))} />
             </div>
 
             <div className="md:col-span-2">
               <Button type="submit" disabled={saving}>
                 {saving ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Save className="me-2 h-4 w-4" />}
-                Save Profile
+                ذخیره پروفایل
               </Button>
             </div>
           </form>
@@ -265,16 +265,16 @@ export function ProfilePanel() {
       {profile && (
         <Card>
           <CardHeader>
-            <CardTitle>Account Summary</CardTitle>
+            <CardTitle>خلاصه حساب</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <p>
-              <span className="text-muted-foreground">Email: </span>
+              <span className="text-muted-foreground">ایمیل: </span>
               {profile.email}
             </p>
             <p>
-              <span className="text-muted-foreground">Joined: </span>
-              {new Date(profile.createdAt).toLocaleDateString()}
+              <span className="text-muted-foreground">تاریخ عضویت: </span>
+              {new Date(profile.createdAt).toLocaleDateString("fa-IR")}
             </p>
           </CardContent>
         </Card>
@@ -282,3 +282,7 @@ export function ProfilePanel() {
     </section>
   );
 }
+
+
+
+

@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+﻿import { AlertTriangle } from "lucide-react";
 
 type Props = {
   title?: string;
@@ -8,7 +8,7 @@ type Props = {
   className?: string;
 };
 
-export function ErrorBanner({ title = "Request Failed", message, code, details = [], className }: Props) {
+export function ErrorBanner({ title = "خطا در درخواست", message, code, details = [], className }: Props) {
   return (
     <div
       className={`rounded-lg border border-destructive/35 bg-destructive/10 p-3 text-sm text-destructive ${className ?? ""}`}
@@ -20,7 +20,7 @@ export function ErrorBanner({ title = "Request Failed", message, code, details =
         <div className="space-y-1">
           <p className="font-semibold">{title}</p>
           <p>{message}</p>
-          {code && <p className="text-xs uppercase opacity-85">Code: {code}</p>}
+          {code && <p className="text-xs uppercase opacity-85">کد: {code}</p>}
           {details.length > 0 && (
             <ul className="mt-1 list-disc space-y-0.5 ps-4 text-xs">
               {details.slice(0, 4).map((detail, index) => (
@@ -33,3 +33,4 @@ export function ErrorBanner({ title = "Request Failed", message, code, details =
     </div>
   );
 }
+

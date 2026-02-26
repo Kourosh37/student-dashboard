@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -7,6 +7,7 @@ import { LoaderCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/client-api";
+import { weekdayLabel } from "@/lib/fa";
 import { toPanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
@@ -53,12 +54,12 @@ export function SchedulePanel() {
       setCourses(courseData.items);
       setSemesters(semesterData);
     } catch (err) {
-      const parsed = toPanelError(err, "Failed to load schedule");
+      const parsed = toPanelError(err, "بارگذاری برنامه هفتگی انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
-      pushToast({ tone: "error", title: "Load failed", description: parsed.message });
+      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -80,22 +81,22 @@ export function SchedulePanel() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Schedule</h2>
+        <h2 className="text-2xl font-bold">برنامه هفتگی</h2>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Class Timetable</CardTitle>
+          <CardTitle>جدول کلاس ها</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-4">
-            <Input placeholder="Search class schedule" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <Input placeholder="جستجوی برنامه کلاسی" value={query} onChange={(event) => setQuery(event.target.value)} />
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
               value={semesterId}
               onChange={(event) => setSemesterId(event.target.value)}
             >
-              <option value="">All semesters</option>
+              <option value="">همه ترم ها</option>
               {semesters.map((semester) => (
                 <option key={semester.id} value={semester.id}>
                   {semester.title}
@@ -107,7 +108,7 @@ export function SchedulePanel() {
               value={courseId}
               onChange={(event) => setCourseId(event.target.value)}
             >
-              <option value="">All courses</option>
+              <option value="">همه درس ها</option>
               {courses.map((course) => (
                 <option key={course.id} value={course.id}>
                   {course.name}
@@ -121,7 +122,7 @@ export function SchedulePanel() {
             >
               {weekdays.map((day) => (
                 <option key={day || "ALL"} value={day}>
-                  {day || "All weekdays"}
+                  {weekdayLabel(day)}
                 </option>
               ))}
             </select>
@@ -132,7 +133,7 @@ export function SchedulePanel() {
               <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No schedule entries found.</p>
+            <p className="text-sm text-muted-foreground">ورودی برنامه ای پیدا نشد.</p>
           ) : (
             <div className="space-y-2">
               {items.map((entry) => (
@@ -141,7 +142,7 @@ export function SchedulePanel() {
                     {entry.course.name} {entry.course.code ? `(${entry.course.code})` : ""}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {entry.weekday} | {entry.startTime}-{entry.endTime} | {entry.room ?? "No room"}
+                    {weekdayLabel(entry.weekday)} | {entry.startTime}-{entry.endTime} | {entry.room ?? "بدون کلاس"}
                   </p>
                   <p className="text-xs text-muted-foreground">{entry.course.semesterTitle}</p>
                 </article>
