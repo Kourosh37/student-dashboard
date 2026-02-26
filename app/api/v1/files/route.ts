@@ -28,7 +28,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireSession(request);
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      return fail("Invalid multipart form-data body", 400, "INVALID_MULTIPART_FORM");
+    }
+
     const maybeFile = formData.get("file");
     if (!(maybeFile instanceof File)) {
       return fail("File is required", 400, "FILE_REQUIRED");

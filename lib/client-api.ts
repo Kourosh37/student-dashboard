@@ -32,6 +32,8 @@ const messageMap: Record<string, string> = {
   "Validation failed": "اعتبارسنجی داده ها ناموفق بود.",
   "Request failed.": "درخواست ناموفق بود.",
   "File is required": "فایل الزامی است.",
+  "File is too large (max 1GB)": "حجم فایل بیش از حد مجاز است (حداکثر 1 گیگابایت).",
+  "Invalid multipart form-data body": "بدنه فایل ارسالی نامعتبر است. دوباره تلاش کنید.",
   "Select a file first.": "ابتدا یک فایل انتخاب کنید.",
   "File not found": "فایل پیدا نشد.",
   "Folder not found": "پوشه پیدا نشد.",

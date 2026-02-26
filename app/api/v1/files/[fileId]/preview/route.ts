@@ -1,11 +1,10 @@
-﻿import { promises as fs } from "fs";
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireSession } from "@/lib/auth/guards";
 import { buildContentDisposition } from "@/lib/content-disposition";
 import { ApiError, fail, handleApiError } from "@/lib/http";
 import { getFileForDownload, getFilePreviewType } from "@/lib/services/file-service";
-import { getStoredFilePath } from "@/lib/storage";
+import { getStoredFileStats, openStoredFileStream } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -29,10 +28,10 @@ export async function GET(request: NextRequest, context: Context) {
       });
     }
 
-    const absolutePath = getStoredFilePath(file.storageName);
-    let data: Buffer;
+    let size = 0;
     try {
-      data = await fs.readFile(absolutePath);
+      const stats = await getStoredFileStats(file.storageName);
+      size = stats.size;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new ApiError("Stored file is missing", 404, "FILE_STORAGE_MISSING");
@@ -40,13 +39,13 @@ export async function GET(request: NextRequest, context: Context) {
       throw error;
     }
 
-    const body = new Uint8Array(data);
+    const body = openStoredFileStream(file.storageName);
 
     return new NextResponse(body, {
       status: 200,
       headers: {
         "Content-Type": file.mimeType || "application/octet-stream",
-        "Content-Length": String(body.byteLength),
+        "Content-Length": String(size),
         "Content-Disposition": buildContentDisposition("inline", file.originalName),
         "X-Preview-Type": previewType,
       },
