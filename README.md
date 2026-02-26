@@ -95,6 +95,40 @@ pnpm docker:logs
 pnpm docker:down
 ```
 
+## Production (PM2 + Nginx)
+
+Files added for production deployment:
+
+- `ecosystem.config.cjs` (PM2 process definition)
+- `deployment/nginx/student-dashboard.conf` (Nginx reverse proxy, TLS, SSE, 1GB upload)
+- `deployment/pm2/deploy-checklist.md` (server setup commands)
+
+Recommended flow:
+
+```bash
+pnpm install --frozen-lockfile
+cp .env.example .env
+# update .env for production
+pnpm prod:prepare
+pnpm pm2:start
+```
+
+PM2 helpers:
+
+```bash
+pnpm pm2:restart
+pnpm pm2:logs
+pnpm pm2:stop
+pnpm pm2:delete
+```
+
+Nginx notes:
+
+- Set your domain in `deployment/nginx/student-dashboard.conf`
+- Set real certificate paths
+- Validate config: `sudo nginx -t`
+- Reload: `sudo systemctl reload nginx`
+
 ## Main API Groups
 
 - `/api/v1/auth/*`

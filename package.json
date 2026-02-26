@@ -14,7 +14,13 @@
     "db:down": "docker compose down",
     "docker:up": "docker compose up --build -d",
     "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f app"
+    "docker:logs": "docker compose logs -f app",
+    "prod:prepare": "pnpm db:generate && pnpm db:push && pnpm build",
+    "pm2:start": "pm2 start ecosystem.config.cjs --env production",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs --env production",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "pm2:delete": "pm2 delete ecosystem.config.cjs",
+    "pm2:logs": "pm2 logs student-dashboard"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
