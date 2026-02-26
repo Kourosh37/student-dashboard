@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Bell, BellRing, LoaderCircle, RefreshCcw } from "lucide-react";
@@ -42,6 +42,9 @@ export function NotificationCenter() {
   const [items, setItems] = useState<ReminderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [requestingPermission, setRequestingPermission] = useState(false);
+  const [notificationSupported, setNotificationSupported] = useState(false);
+  const [secureContext, setSecureContext] = useState(false);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
 
   const count = items.length;
@@ -49,7 +52,7 @@ export function NotificationCenter() {
 
   const loadReminders = useCallback(async () => {
     try {
-      const response = await apiFetch<ReminderResponse>("/api/v1/notifications/reminders?hours=24&limit=20");
+      const response = await apiFetch<ReminderResponse>("/api/v1/notifications/reminders?hours=24&limit=20", { cache: "no-store" });
       setItems(response.items);
     } catch (err) {
       const parsed = toPanelError(err, "بارگذاری یادآورها انجام نشد");
@@ -79,8 +82,14 @@ export function NotificationCenter() {
   });
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPermission(Notification.permission);
+    if (typeof window !== "undefined") {
+      setSecureContext(window.isSecureContext);
+      const supported = "Notification" in window;
+      setNotificationSupported(supported);
+      if (supported) {
+        setPermission(Notification.permission);
+      }
+
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         try {
@@ -121,9 +130,65 @@ export function NotificationCenter() {
   }, [items, permission]);
 
   async function enableBrowserNotifications() {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    const result = await Notification.requestPermission();
-    setPermission(result);
+    if (typeof window === "undefined") return;
+
+    if (!notificationSupported) {
+      pushToast({
+        tone: "error",
+        title: "اعلان مرورگر پشتیبانی نمی شود",
+        description: "مرورگر فعلی شما از Notification API پشتیبانی نمی کند.",
+      });
+      return;
+    }
+
+    if (!secureContext) {
+      pushToast({
+        tone: "error",
+        title: "بستر ناامن",
+        description: "برای فعال سازی اعلان مرورگر باید روی HTTPS یا localhost باشید.",
+      });
+      return;
+    }
+
+    if (permission === "denied") {
+      pushToast({
+        tone: "error",
+        title: "اعلان مسدود شده است",
+        description: "اجازه اعلان برای این سایت بسته است. از تنظیمات مرورگر آن را روی Allow بگذارید.",
+      });
+      return;
+    }
+
+    if (permission === "granted") {
+      pushToast({ tone: "default", title: "اعلان مرورگر فعال است" });
+      return;
+    }
+
+    setRequestingPermission(true);
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+
+      if (result === "granted") {
+        pushToast({ tone: "success", title: "اعلان مرورگر فعال شد" });
+        new Notification("اعلان فعال شد", {
+          body: "از این پس یادآوری های نزدیک برای شما نمایش داده می شوند.",
+        });
+      } else if (result === "denied") {
+        pushToast({
+          tone: "error",
+          title: "اجازه اعلان داده نشد",
+          description: "برای فعال سازی، اجازه اعلان را از تنظیمات مرورگر فعال کنید.",
+        });
+      } else {
+        pushToast({ tone: "default", title: "درخواست اعلان لغو شد" });
+      }
+    } catch (error) {
+      const parsed = toPanelError(error, "فعال سازی اعلان مرورگر انجام نشد");
+      pushToast({ tone: "error", title: "فعال سازی ناموفق بود", description: parsed.message });
+    } finally {
+      setRequestingPermission(false);
+    }
   }
 
   return (
@@ -138,10 +203,14 @@ export function NotificationCenter() {
             <RefreshCcw className="me-2 h-3.5 w-3.5" />
             بروزرسانی
           </Button>
-          {permission !== "granted" && (
-            <Button size="sm" onClick={enableBrowserNotifications}>
-              فعال سازی اعلان مرورگر
+
+          {permission !== "granted" ? (
+            <Button size="sm" onClick={enableBrowserNotifications} disabled={requestingPermission}>
+              {requestingPermission ? <LoaderCircle className="me-2 h-3.5 w-3.5 animate-spin" /> : null}
+              {permission === "denied" ? "اعلان مسدود است" : "فعال سازی اعلان مرورگر"}
             </Button>
+          ) : (
+            <span className="rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs text-emerald-700">اعلان فعال است</span>
           )}
         </div>
       </CardHeader>
@@ -175,4 +244,3 @@ export function NotificationCenter() {
     </Card>
   );
 }
-

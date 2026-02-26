@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,16 @@ type UserAvatarProps = {
   className?: string;
   imageClassName?: string;
 };
+
+function normalizeAvatarSrc(src?: string | null) {
+  if (!src) return null;
+  const trimmed = src.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("asset:")) {
+    return "/api/v1/profile/avatar";
+  }
+  return trimmed;
+}
 
 function AvatarFallbackSvg() {
   return (
@@ -31,17 +41,27 @@ function AvatarFallbackSvg() {
 
 export function UserAvatar({ src, alt = "پروفایل کاربر", className, imageClassName }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
+  const normalizedSrc = useMemo(() => normalizeAvatarSrc(src), [src]);
+
+  const displaySrc = useMemo(() => {
+    if (!normalizedSrc) return null;
+    if (normalizedSrc.startsWith("/api/v1/profile/avatar") && !normalizedSrc.includes("v=")) {
+      const separator = normalizedSrc.includes("?") ? "&" : "?";
+      return `${normalizedSrc}${separator}v=${Date.now()}`;
+    }
+    return normalizedSrc;
+  }, [normalizedSrc]);
 
   useEffect(() => {
     setHasError(false);
-  }, [src]);
+  }, [displaySrc]);
 
-  if (src && !hasError) {
+  if (displaySrc && !hasError) {
     return (
       <div className={cn("overflow-hidden rounded-full border border-border bg-muted", className)}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={src}
+          src={displaySrc}
           alt={alt}
           className={cn("h-full w-full object-cover", imageClassName)}
           onError={() => setHasError(true)}

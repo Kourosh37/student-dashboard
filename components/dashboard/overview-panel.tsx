@@ -48,7 +48,7 @@ export function OverviewPanel() {
     try {
       setLoading(true);
       setLoadFailed(false);
-      const summary = await apiFetch<SummaryResponse>("/api/v1/dashboard/summary");
+      const summary = await apiFetch<SummaryResponse>("/api/v1/dashboard/summary", { cache: "no-store" });
       setData(summary);
     } catch (err) {
       const parsed = toPanelError(err, "بارگذاری داشبورد انجام نشد");

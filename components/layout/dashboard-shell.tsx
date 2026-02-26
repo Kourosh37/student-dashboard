@@ -3,7 +3,7 @@
 import type React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck2,
   CalendarClock,
@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { apiFetch } from "@/lib/client-api";
 import { pushToast } from "@/lib/toast";
+import { useRealtime } from "@/lib/use-realtime";
 import { cn } from "@/lib/utils";
 
 type MeResponse = {
@@ -82,27 +83,28 @@ export function DashboardShell({ children }: Props) {
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadMe() {
-      try {
-        const me = await apiFetch<MeResponse>("/api/v1/auth/me", { cache: "no-store" });
-        if (!active) return;
-        setUser(me);
-      } catch {
-        if (!active) return;
-        router.replace("/login");
-      } finally {
-        if (active) setLoadingUser(false);
-      }
+  const loadMe = useCallback(async () => {
+    try {
+      const me = await apiFetch<MeResponse>("/api/v1/auth/me", { cache: "no-store" });
+      setUser(me);
+    } catch {
+      router.replace("/login");
+    } finally {
+      setLoadingUser(false);
     }
-
-    loadMe();
-    return () => {
-      active = false;
-    };
   }, [router]);
+
+  useEffect(() => {
+    loadMe();
+  }, [loadMe]);
+
+  useRealtime({
+    onMessage: (message) => {
+      if (message.type === "profile.updated") {
+        loadMe();
+      }
+    },
+  });
 
   const dateLabel = useMemo(() => formatHeaderDate(now), [now]);
 
