@@ -76,6 +76,8 @@ const messageMap: Record<string, string> = {
   "Invalid semester": "ترم انتخاب شده نامعتبر است.",
   "Start time must be HH:mm": "زمان شروع باید با فرمت HH:mm باشد.",
   "End time must be HH:mm": "زمان پایان باید با فرمت HH:mm باشد.",
+  "Session end time must be after start time": "ساعت پایان جلسه باید بعد از ساعت شروع باشد.",
+  "Class sessions overlap with each other": "جلسه های کلاس با هم تداخل زمانی دارند.",
   "Exam title is too short": "عنوان امتحان خیلی کوتاه است.",
   "Exam title is too long": "عنوان امتحان خیلی طولانی است.",
   "Invalid exam date": "تاریخ امتحان نامعتبر است.",

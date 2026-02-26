@@ -1,8 +1,9 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 
 import { requireSession } from "@/lib/auth/guards";
-import { handleApiError, ok, validationFail } from "@/lib/http";
+import { fail, handleApiError, ok, validationFail } from "@/lib/http";
 import { publishUserEvent } from "@/lib/realtime";
+import { detectCourseSessionConflicts } from "@/lib/services/conflict-service";
 import { createCourse, listCourses } from "@/lib/services/course-service";
 import { ensureSemesterOwnership } from "@/lib/services/ownership";
 import { createCourseSchema, listCoursesQuerySchema } from "@/lib/validators/course";
@@ -33,7 +34,26 @@ export async function POST(request: NextRequest) {
     }
 
     await ensureSemesterOwnership(session.userId, parsed.data.semesterId);
-    const created = await createCourse(session.userId, parsed.data);
+
+    if (parsed.data.sessions.length > 0 && !parsed.data.allowConflicts) {
+      const conflicts = await detectCourseSessionConflicts(session.userId, parsed.data.semesterId, parsed.data.sessions);
+      if (conflicts.length > 0) {
+        return fail("Schedule conflict detected", 409, "SCHEDULE_CONFLICT", { conflicts });
+      }
+    }
+
+    const created = await createCourse(session.userId, {
+      semesterId: parsed.data.semesterId,
+      name: parsed.data.name,
+      code: parsed.data.code,
+      instructor: parsed.data.instructor,
+      location: parsed.data.location,
+      credits: parsed.data.credits,
+      color: parsed.data.color,
+      isPinned: parsed.data.isPinned,
+      sessions: parsed.data.sessions,
+    });
+
     publishUserEvent(session.userId, "course.created", { courseId: created.id });
     return ok(created, { status: 201 });
   } catch (error) {

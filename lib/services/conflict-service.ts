@@ -10,6 +10,12 @@ export type ConflictItem = {
   endAt: string;
 };
 
+export type CourseSessionDraft = {
+  weekday: Weekday;
+  startTime: string;
+  endTime: string;
+};
+
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60_000);
 }
@@ -23,9 +29,17 @@ function overlaps(a: { startAt: Date; endAt: Date }, b: { startAt: Date; endAt: 
   return a.startAt.getTime() < b.endAt.getTime() && b.startAt.getTime() < a.endAt.getTime();
 }
 
+function overlapsMinutes(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+  return aStart < bEnd && bStart < aEnd;
+}
+
 function toMinutes(time: string) {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
+}
+
+function minutesFromDate(date: Date) {
+  return date.getUTCHours() * 60 + date.getUTCMinutes();
 }
 
 function weekdayFromDate(date: Date): Weekday {
@@ -37,6 +51,18 @@ function weekdayFromDate(date: Date): Weekday {
   if (day === 4) return "THURSDAY";
   if (day === 5) return "FRIDAY";
   return "SATURDAY";
+}
+
+function firstOccurrenceInRange(startAt: Date, endAt: Date, weekday: Weekday) {
+  const cursor = new Date(Date.UTC(startAt.getUTCFullYear(), startAt.getUTCMonth(), startAt.getUTCDate()));
+  while (cursor.getTime() <= endAt.getTime()) {
+    if (weekdayFromDate(cursor) === weekday) {
+      return cursor;
+    }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return new Date(Date.UTC(startAt.getUTCFullYear(), startAt.getUTCMonth(), startAt.getUTCDate()));
 }
 
 function plannerInterval(item: {
@@ -202,6 +228,173 @@ export async function detectScheduleConflicts(
   }
 
   return conflicts.sort((a, b) => a.startAt.localeCompare(b.startAt));
+}
+
+export async function detectCourseSessionConflicts(
+  userId: string,
+  semesterId: string,
+  sessions: CourseSessionDraft[],
+  options?: {
+    ignoreCourseId?: string;
+  },
+) {
+  if (sessions.length === 0) return [];
+
+  const semester = await prisma.semester.findFirst({
+    where: { id: semesterId, userId },
+    select: { startDate: true, endDate: true },
+  });
+  if (!semester) return [];
+
+  const from = semester.startDate;
+  const to = semester.endDate;
+
+  const [existingSessions, plannerItems, events, exams] = await Promise.all([
+    prisma.courseSession.findMany({
+      where: {
+        course: {
+          userId,
+          semesterId,
+          ...(options?.ignoreCourseId ? { id: { not: options.ignoreCourseId } } : {}),
+        },
+      },
+      include: {
+        course: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    }),
+    prisma.plannerItem.findMany({
+      where: {
+        userId,
+        OR: [
+          { startAt: { gte: from, lte: to } },
+          { dueAt: { gte: from, lte: to } },
+          { plannedFor: { gte: from, lte: to } },
+        ],
+      },
+      select: {
+        id: true,
+        title: true,
+        startAt: true,
+        dueAt: true,
+        plannedFor: true,
+      },
+    }),
+    prisma.studentEvent.findMany({
+      where: {
+        userId,
+        startAt: { lte: to },
+        OR: [{ endAt: null }, { endAt: { gte: from } }],
+      },
+      select: {
+        id: true,
+        title: true,
+        startAt: true,
+        endAt: true,
+      },
+    }),
+    prisma.exam.findMany({
+      where: {
+        userId,
+        examDate: { gte: from, lte: to },
+      },
+      select: {
+        id: true,
+        title: true,
+        examDate: true,
+        durationMinutes: true,
+      },
+    }),
+  ]);
+
+  const conflicts: ConflictItem[] = [];
+
+  for (const draft of sessions) {
+    const draftStartMinutes = toMinutes(draft.startTime);
+    const draftEndMinutes = toMinutes(draft.endTime);
+    const classDate = firstOccurrenceInRange(from, to, draft.weekday);
+
+    for (const existing of existingSessions) {
+      if (existing.weekday !== draft.weekday) continue;
+
+      const existingStartMinutes = toMinutes(existing.startTime);
+      const existingEndMinutes = toMinutes(existing.endTime);
+      if (!overlapsMinutes(draftStartMinutes, draftEndMinutes, existingStartMinutes, existingEndMinutes)) continue;
+
+      const startAt = addMinutes(classDate, existingStartMinutes);
+      const endAt = addMinutes(classDate, existingEndMinutes);
+      conflicts.push({
+        source: "CLASS",
+        id: existing.id,
+        title: `کلاس ${existing.course.name}`,
+        startAt: startAt.toISOString(),
+        endAt: endAt.toISOString(),
+      });
+    }
+
+    for (const item of plannerItems) {
+      const interval = plannerInterval({
+        startAt: item.startAt,
+        dueAt: item.dueAt,
+        plannedFor: item.plannedFor,
+      });
+      if (!interval) continue;
+      if (weekdayFromDate(interval.startAt) !== draft.weekday) continue;
+
+      const startMinutes = minutesFromDate(interval.startAt);
+      const endMinutes = minutesFromDate(interval.endAt);
+      if (!overlapsMinutes(draftStartMinutes, draftEndMinutes, startMinutes, endMinutes)) continue;
+
+      conflicts.push({
+        source: "PLANNER",
+        id: item.id,
+        title: item.title,
+        startAt: interval.startAt.toISOString(),
+        endAt: interval.endAt.toISOString(),
+      });
+    }
+
+    for (const item of events) {
+      const interval = eventInterval(item);
+      if (weekdayFromDate(interval.startAt) !== draft.weekday) continue;
+
+      const startMinutes = minutesFromDate(interval.startAt);
+      const endMinutes = minutesFromDate(interval.endAt);
+      if (!overlapsMinutes(draftStartMinutes, draftEndMinutes, startMinutes, endMinutes)) continue;
+
+      conflicts.push({
+        source: "EVENT",
+        id: item.id,
+        title: item.title,
+        startAt: interval.startAt.toISOString(),
+        endAt: interval.endAt.toISOString(),
+      });
+    }
+
+    for (const item of exams) {
+      const interval = examInterval(item);
+      if (weekdayFromDate(interval.startAt) !== draft.weekday) continue;
+
+      const startMinutes = minutesFromDate(interval.startAt);
+      const endMinutes = minutesFromDate(interval.endAt);
+      if (!overlapsMinutes(draftStartMinutes, draftEndMinutes, startMinutes, endMinutes)) continue;
+
+      conflicts.push({
+        source: "EXAM",
+        id: item.id,
+        title: item.title,
+        startAt: interval.startAt.toISOString(),
+        endAt: interval.endAt.toISOString(),
+      });
+    }
+  }
+
+  const deduplicated = Array.from(new Map(conflicts.map((item) => [`${item.source}-${item.id}-${item.startAt}-${item.endAt}`, item])).values());
+  return deduplicated.sort((a, b) => a.startAt.localeCompare(b.startAt));
 }
 
 export function plannerDraftInterval(input: {
