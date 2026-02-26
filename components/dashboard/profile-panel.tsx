@@ -24,6 +24,7 @@ export function ProfilePanel() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [formError, setFormError] = useState<PanelError | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarInputVersion, setAvatarInputVersion] = useState(0);
   const [form, setForm] = useState({
     name: "",
@@ -66,6 +67,29 @@ export function ProfilePanel() {
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) {
+        URL.revokeObjectURL(avatarPreviewUrl);
+      }
+    };
+  }, [avatarPreviewUrl]);
+
+  function clearAvatarPreview() {
+    setAvatarPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }
+
+  function handleAvatarFileChange(file: File | null) {
+    setAvatarFile(file);
+    setAvatarPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  }
 
   async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,6 +139,7 @@ export function ProfilePanel() {
       const updated = await apiFetchForm<UserProfile>("/api/v1/profile/avatar", formData, { method: "POST" });
       hydrateProfile(updated);
       setAvatarFile(null);
+      clearAvatarPreview();
       setAvatarInputVersion((value) => value + 1);
       pushToast({ tone: "success", title: "عکس پروفایل بروزرسانی شد" });
     } catch (err) {
@@ -134,6 +159,7 @@ export function ProfilePanel() {
       const updated = await apiFetch<UserProfile>("/api/v1/profile/avatar", { method: "DELETE" });
       hydrateProfile(updated);
       setAvatarFile(null);
+      clearAvatarPreview();
       setAvatarInputVersion((value) => value + 1);
       pushToast({ tone: "success", title: "عکس پروفایل حذف شد" });
     } catch (err) {
@@ -170,14 +196,14 @@ export function ProfilePanel() {
         <CardContent>
           <div className="mb-6 rounded-lg border border-border/70 p-4">
             <div className="flex flex-wrap items-center gap-4">
-              <UserAvatar src={profile?.avatarUrl ?? null} alt="تصویر پروفایل" className="h-20 w-20" />
+              <UserAvatar src={avatarPreviewUrl ?? profile?.avatarUrl ?? null} alt="تصویر پروفایل" className="h-20 w-20" />
               <div className="flex-1 space-y-2">
                 <Label>عکس پروفایل</Label>
                 <Input
                   key={`avatar-input-${avatarInputVersion}`}
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-                  onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
+                  onChange={(event) => handleAvatarFileChange(event.target.files?.[0] ?? null)}
                 />
                 <p className="text-xs text-muted-foreground">فرمت های مجاز: JPG، PNG، WEBP، GIF، AVIF. حداکثر حجم: 5MB</p>
                 {avatarFileError && <p className="text-xs text-destructive">{avatarFileError}</p>}

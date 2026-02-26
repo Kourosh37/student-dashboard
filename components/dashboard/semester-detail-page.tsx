@@ -1,9 +1,8 @@
-﻿
-"use client";
+﻿"use client";
 
 import type React from "react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -212,7 +211,6 @@ export function SemesterDetailPage({ semesterId }: Props) {
   const router = useRouter();
   const { requestConfirm, conflictDialog } = useConflictConfirm();
   const { requestConfirm: requestDeleteConfirm, confirmDialog: deleteConfirmDialog } = useConfirmDialog();
-  const uploadSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [semester, setSemester] = useState<Semester | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -238,6 +236,8 @@ export function SemesterDetailPage({ semesterId }: Props) {
   const [editSessions, setEditSessions] = useState<SessionDraft[]>(initialSessions);
 
   const [uploadForm, setUploadForm] = useState({ courseId: "", isPinned: false, tags: "" });
+  const [createCourseOpen, setCreateCourseOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const loadDetail = useCallback(async () => {
     try {
@@ -300,6 +300,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
       await submitCreate(false);
       setCourseForm(initialCourseForm);
       setCourseSessions(initialSessions);
+      setCreateCourseOpen(false);
       pushToast({ tone: "success", title: "درس ایجاد شد" });
       await loadDetail();
     } catch (error) {
@@ -311,6 +312,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
           await submitCreate(true);
           setCourseForm(initialCourseForm);
           setCourseSessions(initialSessions);
+          setCreateCourseOpen(false);
           pushToast({ tone: "success", title: "درس با وجود تداخل ایجاد شد" });
           await loadDetail();
           setSavingCourse(false);
@@ -459,6 +461,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
 
       setUploadFile(null);
       setUploadForm({ courseId: "", isPinned: false, tags: "" });
+      setUploadOpen(false);
       pushToast({ tone: "success", title: "فایل آپلود شد" });
       await loadDetail();
     } catch (error) {
@@ -472,7 +475,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
 
   function selectCourseForUpload(courseId: string) {
     setUploadForm((prev) => ({ ...prev, courseId }));
-    uploadSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setUploadOpen(true);
   }
 
   const courseNameError = fieldError(courseFormError?.fieldErrors ?? {}, "name");
@@ -533,12 +536,19 @@ export function SemesterDetailPage({ semesterId }: Props) {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>درس های ترم</CardTitle>
-          <CardDescription>ایجاد و مدیریت درس و جلسه های کلاسی بدون پاپ آپ</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle>درس های ترم</CardTitle>
+            <CardDescription>ایجاد و مدیریت درس و جلسه های کلاسی</CardDescription>
+          </div>
+          <Button type="button" onClick={() => setCreateCourseOpen((prev) => !prev)}>
+            <Plus className="me-2 h-4 w-4" />
+            {createCourseOpen ? "بستن فرم" : "ایجاد درس"}
+          </Button>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4 md:grid-cols-2" onSubmit={createCourse}>
+          {createCourseOpen && (
+            <form className="grid gap-4 rounded-md border border-border/70 p-3 md:grid-cols-2" onSubmit={createCourse}>
             <div className="space-y-2 md:col-span-2">
               <Label>نام درس</Label>
               <Input
@@ -579,15 +589,20 @@ export function SemesterDetailPage({ semesterId }: Props) {
             <SessionsEditor sessions={courseSessions} onChange={setCourseSessions} />
             {createSessionError && <p className="text-xs text-destructive md:col-span-2">{createSessionError}</p>}
 
-            <div className="md:col-span-2">
+            <div className="flex gap-2 md:col-span-2">
               <Button type="submit" disabled={savingCourse}>
                 {savingCourse ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Plus className="me-2 h-4 w-4" />}
                 ایجاد درس
               </Button>
+              <Button type="button" variant="outline" onClick={() => setCreateCourseOpen(false)}>
+                <X className="me-2 h-4 w-4" />
+                بستن
+              </Button>
             </div>
           </form>
+          )}
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-4 space-y-3">
             {courses.length === 0 ? (
               <p className="text-sm text-muted-foreground">هنوز درسی ثبت نشده است.</p>
             ) : (
@@ -657,38 +672,64 @@ export function SemesterDetailPage({ semesterId }: Props) {
         </CardContent>
       </Card>
 
-      <Card ref={uploadSectionRef}>
-        <CardHeader>
-          <CardTitle>آپلود مستقیم فایل</CardTitle>
-          <CardDescription>{selectedCourseLabel}</CardDescription>
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle>آپلود مستقیم فایل</CardTitle>
+            <CardDescription>{selectedCourseLabel}</CardDescription>
+          </div>
+          <Button type="button" onClick={() => setUploadOpen((prev) => !prev)}>
+            <UploadCloud className="me-2 h-4 w-4" />
+            {uploadOpen ? "بستن آپلود" : "آپلود فایل"}
+          </Button>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4 md:grid-cols-2" onSubmit={uploadSemesterFile}>
-            <div className="space-y-2 md:col-span-2">
-              <Label>فایل</Label>
-              <Input type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} required />
-              {uploadFileError && <p className="text-xs text-destructive">{uploadFileError}</p>}
-            </div>
+          {uploadOpen && (
+            <form className="grid gap-4 rounded-md border border-border/70 p-3 md:grid-cols-2" onSubmit={uploadSemesterFile}>
+              <div className="space-y-2 md:col-span-2">
+                <Label>فایل</Label>
+                <Input type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} required />
+                {uploadFileError && <p className="text-xs text-destructive">{uploadFileError}</p>}
+              </div>
 
-            <div className="space-y-2">
-              <Label>درس (اختیاری)</Label>
-              <select className="h-10 rounded-md border border-input bg-background px-3 text-sm" value={uploadForm.courseId} onChange={(event) => setUploadForm((prev) => ({ ...prev, courseId: event.target.value }))}>
-                <option value="">برای کل ترم</option>
-                {courses.map((course) => (<option key={course.id} value={course.id}>{course.name}</option>))}
-              </select>
-            </div>
+              <div className="space-y-2">
+                <Label>درس (اختیاری)</Label>
+                <select
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  value={uploadForm.courseId}
+                  onChange={(event) => setUploadForm((prev) => ({ ...prev, courseId: event.target.value }))}
+                >
+                  <option value="">برای کل ترم</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="space-y-2"><Label>برچسب ها</Label><Input value={uploadForm.tags} onChange={(event) => setUploadForm((prev) => ({ ...prev, tags: event.target.value }))} placeholder="جزوه، تمرین، مهم" /></div>
+              <div className="space-y-2">
+                <Label>برچسب ها</Label>
+                <Input value={uploadForm.tags} onChange={(event) => setUploadForm((prev) => ({ ...prev, tags: event.target.value }))} placeholder="جزوه، تمرین، مهم" />
+              </div>
 
-            <label className="flex items-center gap-2 text-sm md:col-span-2">
-              <input type="checkbox" checked={uploadForm.isPinned} onChange={(event) => setUploadForm((prev) => ({ ...prev, isPinned: event.target.checked }))} />
-              سنجاق کردن فایل
-            </label>
+              <label className="flex items-center gap-2 text-sm md:col-span-2">
+                <input type="checkbox" checked={uploadForm.isPinned} onChange={(event) => setUploadForm((prev) => ({ ...prev, isPinned: event.target.checked }))} />
+                سنجاق کردن فایل
+              </label>
 
-            <div className="md:col-span-2">
-              <Button type="submit" disabled={uploading}>{uploading ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <UploadCloud className="me-2 h-4 w-4" />}آپلود</Button>
-            </div>
-          </form>
+              <div className="flex gap-2 md:col-span-2">
+                <Button type="submit" disabled={uploading}>
+                  {uploading ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <UploadCloud className="me-2 h-4 w-4" />}
+                  آپلود
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setUploadOpen(false)}>
+                  <X className="me-2 h-4 w-4" />
+                  بستن
+                </Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
 
@@ -735,4 +776,3 @@ export function SemesterDetailPage({ semesterId }: Props) {
     </section>
   );
 }
-
