@@ -66,6 +66,35 @@ pnpm dev
 
 Open `http://localhost:3000`.
 
+## Docker (One Command)
+
+Run the entire stack (PostgreSQL + DB init + Prisma schema + seed + app):
+
+```bash
+docker compose up --build -d
+```
+
+or:
+
+```bash
+pnpm docker:up
+```
+
+What this does automatically:
+
+- Starts PostgreSQL
+- Creates `student_dashboard` database if it does not exist
+- Runs Prisma `db push` to create/update tables
+- Runs seed (idempotent; skips if seed user already exists)
+- Starts the Next.js app on port `3000`
+
+Useful commands:
+
+```bash
+pnpm docker:logs
+pnpm docker:down
+```
+
 ## Main API Groups
 
 - `/api/v1/auth/*`

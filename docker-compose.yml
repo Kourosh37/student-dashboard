@@ -1,21 +1,75 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: student-dashboard-postgres
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
-      POSTGRES_DB: student_dashboard
-      POSTGRES_USER: student
-      POSTGRES_PASSWORD: student
+      POSTGRES_DB: ${POSTGRES_DB:-student_dashboard}
+      POSTGRES_USER: ${POSTGRES_USER:-student}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-student}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U student -d student_dashboard"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-student} -d ${POSTGRES_DB:-student_dashboard}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
+
+  db-init:
+    image: postgres:16-alpine
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-student_dashboard}
+      POSTGRES_USER: ${POSTGRES_USER:-student}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-student}
+    volumes:
+      - ./scripts/docker-db-init.sh:/scripts/docker-db-init.sh:ro
+    command: ["sh", "/scripts/docker-db-init.sh"]
+    restart: "no"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-student}:${POSTGRES_PASSWORD:-student}@postgres:5432/${POSTGRES_DB:-student_dashboard}?schema=public
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-replace-with-a-long-random-secret}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@student-dashboard.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-ChangeMe123!}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Student User}
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    command: ["sh", "-c", "pnpm db:generate && pnpm db:push && pnpm db:seed"]
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-student}:${POSTGRES_PASSWORD:-student}@postgres:5432/${POSTGRES_DB:-student_dashboard}?schema=public
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-replace-with-a-long-random-secret}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@student-dashboard.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-ChangeMe123!}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Student User}
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - storage_data:/app/storage
 
 volumes:
   postgres_data:
+  storage_data:
