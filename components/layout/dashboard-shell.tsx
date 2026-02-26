@@ -8,6 +8,7 @@ import {
   CalendarCheck2,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   Files,
   FolderKanban,
   GraduationCap,
@@ -20,6 +21,7 @@ import {
 
 import { NotificationCenter } from "@/components/layout/notification-center";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { apiFetch } from "@/lib/client-api";
 import { pushToast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -38,6 +40,7 @@ const navItems = [
   { href: "/dashboard/calendar", label: "تقویم", icon: CalendarDays },
   { href: "/dashboard/exams", label: "امتحانات", icon: CalendarCheck2 },
   { href: "/dashboard/planner", label: "برنامه ریزی", icon: CalendarCheck2 },
+  { href: "/dashboard/events", label: "رویدادها", icon: CalendarRange },
   { href: "/dashboard/files", label: "مدیریت فایل", icon: Files },
   { href: "/dashboard/profile", label: "پروفایل", icon: UserRound },
 ];
@@ -46,12 +49,23 @@ type Props = {
   children: React.ReactNode;
 };
 
-function initials(value: string) {
-  const cleaned = value.trim();
-  if (!cleaned) return "D";
-  const parts = cleaned.split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
-  return `${parts[0].slice(0, 1)}${parts[1].slice(0, 1)}`.toUpperCase();
+function formatHeaderDate(date: Date) {
+  const formatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian-nu-latn", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const parts = formatter.formatToParts(date);
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+
+  if (!day || !month || !year) {
+    return formatter.format(date);
+  }
+
+  return `${day} ${month} ${year}`;
 }
 
 export function DashboardShell({ children }: Props) {
@@ -90,16 +104,7 @@ export function DashboardShell({ children }: Props) {
     };
   }, [router]);
 
-  const dateLabel = useMemo(
-    () =>
-      new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(now),
-    [now],
-  );
+  const dateLabel = useMemo(() => formatHeaderDate(now), [now]);
 
   const timeLabel = useMemo(
     () =>
@@ -166,14 +171,7 @@ export function DashboardShell({ children }: Props) {
 
           <div className="mt-auto rounded-xl border border-border bg-muted/45 p-3">
             <div className="mb-3 flex items-center gap-3">
-              {user?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatarUrl} alt="پروفایل" className="h-10 w-10 rounded-full border border-border object-cover" />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
-                  {initials(user?.name ?? "D")}
-                </div>
-              )}
+              <UserAvatar src={user?.avatarUrl ?? null} alt="پروفایل" className="h-10 w-10" />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{userLabel}</p>
                 <p className="truncate text-xs text-muted-foreground">{user?.email ?? ""}</p>
@@ -206,14 +204,7 @@ export function DashboardShell({ children }: Props) {
                 </div>
 
                 <div className="hidden items-center gap-2 rounded-lg border border-border bg-muted/40 px-2 py-1.5 sm:flex">
-                  {user?.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.avatarUrl} alt="پروفایل" className="h-8 w-8 rounded-full border border-border object-cover" />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/15 text-[11px] font-bold text-primary">
-                      {initials(user?.name ?? "D")}
-                    </div>
-                  )}
+                  <UserAvatar src={user?.avatarUrl ?? null} alt="پروفایل" className="h-8 w-8" />
                   <p className="max-w-28 truncate text-xs font-medium">{userLabel}</p>
                 </div>
 
@@ -261,4 +252,3 @@ export function DashboardShell({ children }: Props) {
     </div>
   );
 }
-

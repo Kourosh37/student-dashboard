@@ -8,15 +8,17 @@ import { faIR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiFetch } from "@/lib/client-api";
+import { plannerCadenceLabel } from "@/lib/fa";
 import { toPanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
 
 type ReminderItem = {
   id: string;
-  type: "PLANNER" | "EXAM";
+  type: "PLANNER" | "EXAM" | "EVENT";
   title: string;
   when: string;
+  cadence: "DAILY" | "WEEKLY" | "MONTHLY" | null;
   course: {
     id: string;
     name: string;
@@ -66,6 +68,9 @@ export function NotificationCenter() {
         "exam.created",
         "exam.updated",
         "exam.deleted",
+        "event.created",
+        "event.updated",
+        "event.deleted",
       ];
       if (syncTypes.includes(message.type)) {
         loadReminders();
@@ -101,8 +106,9 @@ export function NotificationCenter() {
       if (notified.has(item.id)) continue;
       const when = new Date(item.when);
       const bodyParts = [formatDistanceToNow(when, { addSuffix: true, locale: faIR })];
+      if (item.type === "PLANNER" && item.cadence) bodyParts.push(plannerCadenceLabel(item.cadence));
       if (item.course?.name) bodyParts.push(item.course.name);
-      new Notification(item.type === "EXAM" ? "امتحان نزدیک" : "کار نزدیک", {
+      new Notification(item.type === "EXAM" ? "امتحان نزدیک" : item.type === "EVENT" ? "رویداد نزدیک" : "کار نزدیک", {
         body: `${item.title} | ${bodyParts.join(" | ")}`,
       });
       notified.add(item.id);
@@ -152,11 +158,14 @@ export function NotificationCenter() {
               <div key={item.id} className="rounded-md border border-border/70 p-2">
                 <p className="text-sm font-medium">{item.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {item.type === "EXAM" ? "امتحان" : "برنامه ریزی"} | {new Date(item.when).toLocaleString("fa-IR")}
+                  {item.type === "EXAM" ? "امتحان" : item.type === "EVENT" ? "رویداد" : "برنامه ریزی"} | {new Date(item.when).toLocaleString("fa-IR-u-ca-persian")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {item.course ? `درس: ${item.course.name}` : "بدون درس"} |{" "}
-                  {item.semester ? `ترم: ${item.semester.title}` : "بدون ترم"}
+                  {item.type === "PLANNER"
+                    ? `بازه: ${plannerCadenceLabel(item.cadence ?? "DAILY")}`
+                    : item.type === "EVENT"
+                      ? "رویداد شخصی"
+                      : `${item.course ? `درس: ${item.course.name}` : "بدون درس"} | ${item.semester ? `ترم: ${item.semester.title}` : "بدون ترم"}`}
                 </p>
               </div>
             ))}

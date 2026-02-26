@@ -39,6 +39,7 @@ const messageMap: Record<string, string> = {
   "Semester not found": "ترم پیدا نشد.",
   "Course not found": "درس پیدا نشد.",
   "Exam not found": "امتحان پیدا نشد.",
+  "Event not found": "رویداد پیدا نشد.",
   "Planner item not found": "آیتم برنامه ریزی پیدا نشد.",
   "User not found": "کاربر پیدا نشد.",
   Unauthorized: "ابتدا وارد حساب کاربری شوید.",
@@ -80,8 +81,14 @@ const messageMap: Record<string, string> = {
   "Invalid exam date": "تاریخ امتحان نامعتبر است.",
   "Title is too short": "عنوان خیلی کوتاه است.",
   "Title is too long": "عنوان خیلی طولانی است.",
+  "Event title is too short": "عنوان رویداد خیلی کوتاه است.",
+  "Event title is too long": "عنوان رویداد خیلی طولانی است.",
+  "Invalid event start date": "تاریخ شروع رویداد نامعتبر است.",
+  "Invalid event end date": "تاریخ پایان رویداد نامعتبر است.",
+  "Event end date must be after start date": "تاریخ پایان رویداد باید بعد از تاریخ شروع باشد.",
   "Folder name is required": "نام پوشه الزامی است.",
   "Folder name is too long": "نام پوشه خیلی طولانی است.",
+  "Schedule conflict detected": "تداخل زمانی با برنامه های دیگر پیدا شد.",
   "Invalid input": "ورودی نامعتبر است.",
 };
 

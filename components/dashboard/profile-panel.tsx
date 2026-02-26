@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { apiFetch, apiFetchForm } from "@/lib/client-api";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
@@ -169,18 +170,7 @@ export function ProfilePanel() {
         <CardContent>
           <div className="mb-6 rounded-lg border border-border/70 p-4">
             <div className="flex flex-wrap items-center gap-4">
-              {profile?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatarUrl}
-                  alt="تصویر پروفایل"
-                  className="h-20 w-20 rounded-full border border-border object-cover"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground">
-                  بدون عکس
-                </div>
-              )}
+              <UserAvatar src={profile?.avatarUrl ?? null} alt="تصویر پروفایل" className="h-20 w-20" />
               <div className="flex-1 space-y-2">
                 <Label>عکس پروفایل</Label>
                 <Input
@@ -282,7 +272,3 @@ export function ProfilePanel() {
     </section>
   );
 }
-
-
-
-

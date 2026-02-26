@@ -1,9 +1,9 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 
 import { requireSession } from "@/lib/auth/guards";
-import { handleApiError, fail, ok, validationFail } from "@/lib/http";
+import { fail, handleApiError, ok, validationFail } from "@/lib/http";
 import { publishUserEvent } from "@/lib/realtime";
-import { assertLinkedEntitiesExist } from "@/lib/services/file-service";
+import { detectScheduleConflicts, plannerDraftInterval } from "@/lib/services/conflict-service";
 import {
   deletePlannerItem,
   getPlannerItemById,
@@ -39,16 +39,79 @@ export async function PATCH(request: NextRequest, context: Context) {
       return validationFail(parsed.error.issues);
     }
 
-    await assertLinkedEntitiesExist(session.userId, {
-      semesterId: parsed.data.semesterId,
-      courseId: parsed.data.courseId,
-    });
+    const existing = await getPlannerItemById(session.userId, plannerId);
+    if (!existing) {
+      return fail("Planner item not found", 404, "PLANNER_ITEM_NOT_FOUND");
+    }
+
+    const nextPlannedFor =
+      parsed.data.plannedFor === undefined
+        ? existing.plannedFor
+        : parsed.data.plannedFor
+          ? new Date(parsed.data.plannedFor)
+          : null;
+    const nextStartAt =
+      parsed.data.startAt === undefined
+        ? existing.startAt
+        : parsed.data.startAt
+          ? new Date(parsed.data.startAt)
+          : null;
+    const nextDueAt =
+      parsed.data.dueAt === undefined
+        ? existing.dueAt
+        : parsed.data.dueAt
+          ? new Date(parsed.data.dueAt)
+          : null;
+
+    const hasScheduleChange =
+      parsed.data.plannedFor !== undefined ||
+      parsed.data.startAt !== undefined ||
+      parsed.data.dueAt !== undefined;
+
+    if (hasScheduleChange && !parsed.data.allowConflicts) {
+      const interval = plannerDraftInterval({
+        plannedFor: nextPlannedFor,
+        startAt: nextStartAt,
+        dueAt: nextDueAt,
+      });
+
+      if (interval) {
+        const conflicts = await detectScheduleConflicts(session.userId, interval, {
+          ignorePlannerId: plannerId,
+        });
+        if (conflicts.length > 0) {
+          return fail("Schedule conflict detected", 409, "SCHEDULE_CONFLICT", { conflicts });
+        }
+      }
+    }
 
     const updated = await updatePlannerItem(session.userId, plannerId, {
-      ...parsed.data,
-      startAt: parsed.data.startAt ? new Date(parsed.data.startAt) : undefined,
-      dueAt: parsed.data.dueAt ? new Date(parsed.data.dueAt) : undefined,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      status: parsed.data.status,
+      priority: parsed.data.priority,
+      cadence: parsed.data.cadence,
+      plannedFor:
+        parsed.data.plannedFor === undefined
+          ? undefined
+          : parsed.data.plannedFor
+            ? new Date(parsed.data.plannedFor)
+            : null,
+      startAt:
+        parsed.data.startAt === undefined
+          ? undefined
+          : parsed.data.startAt
+            ? new Date(parsed.data.startAt)
+            : null,
+      dueAt:
+        parsed.data.dueAt === undefined
+          ? undefined
+          : parsed.data.dueAt
+            ? new Date(parsed.data.dueAt)
+            : null,
+      isPinned: parsed.data.isPinned,
     });
+
     if (!updated) {
       return fail("Planner item not found", 404, "PLANNER_ITEM_NOT_FOUND");
     }

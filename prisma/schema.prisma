@@ -47,25 +47,32 @@ enum PlannerPriority {
   URGENT
 }
 
+enum PlannerCadence {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
 model User {
-  id             String        @id @default(cuid())
-  email          String        @unique
-  name           String
-  passwordHash   String
-  studentId      String?
-  university     String?
-  major          String?
-  currentTerm    String?
-  bio            String?
-  avatarUrl      String?
-  semesters      Semester[]
-  courses        Course[]
-  exams          Exam[]
-  plannerItems   PlannerItem[]
-  folders        Folder[]
-  files          FileAsset[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  passwordHash String
+  studentId    String?
+  university   String?
+  major        String?
+  currentTerm  String?
+  bio          String?
+  avatarUrl    String?
+  semesters    Semester[]
+  courses      Course[]
+  exams        Exam[]
+  plannerItems PlannerItem[]
+  events       StudentEvent[]
+  folders      Folder[]
+  files        FileAsset[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Semester {
@@ -128,24 +135,24 @@ model CourseSession {
 }
 
 model Exam {
-  id              String      @id @default(cuid())
+  id              String     @id @default(cuid())
   userId          String
   semesterId      String?
   courseId        String?
   title           String
-  examType        ExamType    @default(OTHER)
-  status          ExamStatus  @default(SCHEDULED)
+  examType        ExamType   @default(OTHER)
+  status          ExamStatus @default(SCHEDULED)
   examDate        DateTime
   startTime       String?
   durationMinutes Int?
   location        String?
   notes           String?
-  isPinned        Boolean     @default(false)
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  semester        Semester?   @relation(fields: [semesterId], references: [id], onDelete: SetNull)
-  course          Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  isPinned        Boolean    @default(false)
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semester        Semester?  @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  course          Course?    @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   @@index([userId, examDate, status])
   @@index([semesterId])
@@ -161,6 +168,8 @@ model PlannerItem {
   description String?
   status      PlannerStatus   @default(TODO)
   priority    PlannerPriority @default(MEDIUM)
+  cadence     PlannerCadence  @default(DAILY)
+  plannedFor  DateTime?
   startAt     DateTime?
   dueAt       DateTime?
   isPinned    Boolean         @default(false)
@@ -175,6 +184,24 @@ model PlannerItem {
   @@index([semesterId])
   @@index([courseId])
   @@index([dueAt])
+  @@index([userId, cadence, plannedFor])
+}
+
+model StudentEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  location    String?
+  startAt     DateTime
+  endAt       DateTime?
+  isPinned    Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, startAt])
+  @@index([userId, isPinned])
 }
 
 model Folder {

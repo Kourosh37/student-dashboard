@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import type React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Pin, Plus, Trash2 } from "lucide-react";
 
@@ -9,52 +9,101 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PersianDateInput } from "@/components/ui/persian-date-input";
 import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
-import { apiFetch } from "@/lib/client-api";
-import { formatDateTime, plannerPriorityLabel, plannerStatusLabel } from "@/lib/fa";
+import { ApiClientError, apiFetch } from "@/lib/client-api";
+import { combineDateAndTimeToIso } from "@/lib/date-time";
+import { formatDateTime, plannerCadenceLabel, plannerPriorityLabel, plannerStatusLabel } from "@/lib/fa";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
-import type { Course, PlannerItem, PlannerPriority, PlannerStatus, Semester } from "@/types/dashboard";
+import type { PlannerCadence, PlannerItem, PlannerPriority, PlannerStatus, ScheduleConflict } from "@/types/dashboard";
 
 const statusOptions: PlannerStatus[] = ["TODO", "IN_PROGRESS", "DONE", "ARCHIVED"];
 const priorityOptions: PlannerPriority[] = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+const cadenceOptions: PlannerCadence[] = ["DAILY", "WEEKLY", "MONTHLY"];
 
 type PlannerListResponse = {
   items: PlannerItem[];
   total: number;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractConflicts(error: unknown): ScheduleConflict[] {
+  if (!(error instanceof ApiClientError)) return [];
+  if (error.code !== "SCHEDULE_CONFLICT") return [];
+  if (!isRecord(error.details)) return [];
+
+  const rawConflicts = error.details.conflicts;
+  if (!Array.isArray(rawConflicts)) return [];
+
+  return rawConflicts
+    .filter((item): item is ScheduleConflict => {
+      if (!isRecord(item)) return false;
+      return (
+        typeof item.id === "string" &&
+        typeof item.title === "string" &&
+        typeof item.startAt === "string" &&
+        typeof item.endAt === "string" &&
+        typeof item.source === "string"
+      );
+    })
+    .map((item) => item);
+}
+
+function conflictSourceLabel(source: ScheduleConflict["source"]) {
+  if (source === "CLASS") return "کلاس";
+  if (source === "PLANNER") return "برنامه ریزی";
+  if (source === "EXAM") return "امتحان";
+  return "رویداد";
+}
+
+function askConflictOverride(conflicts: ScheduleConflict[]) {
+  const lines = conflicts.slice(0, 4).map((item) => {
+    const when = new Date(item.startAt).toLocaleString("fa-IR-u-ca-persian", {
+      hour: "2-digit",
+      minute: "2-digit",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+    return `${conflictSourceLabel(item.source)} | ${when} | ${item.title}`;
+  });
+
+  const suffix = conflicts.length > 4 ? `\n... و ${conflicts.length - 4} مورد دیگر` : "";
+  return window.confirm(`تداخل زمانی پیدا شد:\n${lines.join("\n")}${suffix}\n\nبا وجود تداخل ذخیره شود؟`);
+}
+
 export function PlannerPanel() {
   const router = useRouter();
   const [items, setItems] = useState<PlannerItem[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [formError, setFormError] = useState<PanelError | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | PlannerStatus>("");
-  const [semesterFilter, setSemesterFilter] = useState("");
+  const [cadenceFilter, setCadenceFilter] = useState<"" | PlannerCadence>("");
   const [form, setForm] = useState({
     title: "",
     description: "",
     status: "TODO" as PlannerStatus,
     priority: "MEDIUM" as PlannerPriority,
-    semesterId: "",
-    courseId: "",
-    startAt: "",
-    dueAt: "",
+    cadence: "DAILY" as PlannerCadence,
+    plannedForDate: "",
+    plannedForTime: "",
+    startAtDate: "",
+    startAtTime: "",
+    dueAtDate: "",
+    dueAtTime: "",
     isPinned: false,
   });
-
-  const availableCourses = useMemo(
-    () => (form.semesterId ? courses.filter((course) => course.semesterId === form.semesterId) : courses),
-    [courses, form.semesterId],
-  );
 
   const loadAll = useCallback(async () => {
     try {
@@ -64,18 +113,12 @@ export function PlannerPanel() {
       params.set("offset", "0");
       if (query.trim()) params.set("q", query.trim());
       if (statusFilter) params.set("status", statusFilter);
-      if (semesterFilter) params.set("semesterId", semesterFilter);
+      if (cadenceFilter) params.set("cadence", cadenceFilter);
 
-      const [plannerData, courseData, semesterData] = await Promise.all([
-        apiFetch<PlannerListResponse>(`/api/v1/planner?${params.toString()}`),
-        apiFetch<{ items: Course[]; total: number }>("/api/v1/courses?limit=200&offset=0"),
-        apiFetch<Semester[]>("/api/v1/semesters"),
-      ]);
+      const plannerData = await apiFetch<PlannerListResponse>(`/api/v1/planner?${params.toString()}`);
       setItems(plannerData.items);
-      setCourses(courseData.items);
-      setSemesters(semesterData);
-    } catch (err) {
-      const parsed = toPanelError(err, "بارگذاری برنامه ریزی انجام نشد");
+    } catch (error) {
+      const parsed = toPanelError(error, "بارگذاری برنامه ریزی انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
@@ -84,7 +127,7 @@ export function PlannerPanel() {
     } finally {
       setLoading(false);
     }
-  }, [query, statusFilter, semesterFilter, router]);
+  }, [query, statusFilter, cadenceFilter, router]);
 
   useEffect(() => {
     loadAll();
@@ -98,37 +141,86 @@ export function PlannerPanel() {
     },
   });
 
+  async function submitCreate(allowConflicts: boolean) {
+    const plannedFor = form.plannedForDate ? combineDateAndTimeToIso(form.plannedForDate, form.plannedForTime || null) : null;
+    const startAt = form.startAtDate ? combineDateAndTimeToIso(form.startAtDate, form.startAtTime || null) : null;
+    const dueAt = form.dueAtDate ? combineDateAndTimeToIso(form.dueAtDate, form.dueAtTime || null) : null;
+
+    await apiFetch<PlannerItem>("/api/v1/planner", {
+      method: "POST",
+      body: JSON.stringify({
+        title: form.title,
+        description: form.description || null,
+        status: form.status,
+        priority: form.priority,
+        cadence: form.cadence,
+        plannedFor,
+        startAt,
+        dueAt,
+        isPinned: form.isPinned,
+        allowConflicts,
+      }),
+    });
+  }
+
   async function createItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setFormError(null);
+
     try {
-      await apiFetch<PlannerItem>("/api/v1/planner", {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          semesterId: form.semesterId || null,
-          courseId: form.courseId || null,
-          startAt: form.startAt ? new Date(form.startAt).toISOString() : null,
-          dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : null,
-        }),
-      });
+      await submitCreate(false);
       setForm({
         title: "",
         description: "",
         status: "TODO",
         priority: "MEDIUM",
-        semesterId: "",
-        courseId: "",
-        startAt: "",
-        dueAt: "",
+        cadence: "DAILY",
+        plannedForDate: "",
+        plannedForTime: "",
+        startAtDate: "",
+        startAtTime: "",
+        dueAtDate: "",
+        dueAtTime: "",
         isPinned: false,
       });
       setCreateOpen(false);
       pushToast({ tone: "success", title: "آیتم برنامه ریزی ایجاد شد" });
       await loadAll();
-    } catch (err) {
-      const parsed = toPanelError(err, "ایجاد آیتم برنامه ریزی انجام نشد");
+    } catch (error) {
+      const conflicts = extractConflicts(error);
+      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
+        try {
+          await submitCreate(true);
+          setForm({
+            title: "",
+            description: "",
+            status: "TODO",
+            priority: "MEDIUM",
+            cadence: "DAILY",
+            plannedForDate: "",
+            plannedForTime: "",
+            startAtDate: "",
+            startAtTime: "",
+            dueAtDate: "",
+            dueAtTime: "",
+            isPinned: false,
+          });
+          setCreateOpen(false);
+          pushToast({ tone: "success", title: "آیتم با وجود تداخل ایجاد شد" });
+          await loadAll();
+          setSaving(false);
+          return;
+        } catch (retryError) {
+          const parsedRetry = toPanelError(retryError, "ایجاد آیتم برنامه ریزی انجام نشد");
+          setFormError(parsedRetry);
+          pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsedRetry.message });
+          setSaving(false);
+          return;
+        }
+      }
+
+      const parsed = toPanelError(error, "ایجاد آیتم برنامه ریزی انجام نشد");
       setFormError(parsed);
       pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsed.message });
     } finally {
@@ -143,8 +235,8 @@ export function PlannerPanel() {
         body: JSON.stringify(payload),
       });
       setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
-    } catch (err) {
-      const parsed = toPanelError(err, "بروزرسانی آیتم برنامه ریزی انجام نشد");
+    } catch (error) {
+      const parsed = toPanelError(error, "بروزرسانی آیتم برنامه ریزی انجام نشد");
       pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     }
   }
@@ -155,8 +247,8 @@ export function PlannerPanel() {
       await apiFetch<{ deleted: boolean }>(`/api/v1/planner/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((item) => item.id !== id));
       pushToast({ tone: "success", title: "آیتم برنامه ریزی حذف شد" });
-    } catch (err) {
-      const parsed = toPanelError(err, "حذف آیتم برنامه ریزی انجام نشد");
+    } catch (error) {
+      const parsed = toPanelError(error, "حذف آیتم برنامه ریزی انجام نشد");
       pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     }
   }
@@ -167,7 +259,7 @@ export function PlannerPanel() {
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold">برنامه ریزی</h2>
+        <h2 className="text-2xl font-bold">برنامه ریزی مستقل</h2>
         <Button type="button" onClick={() => setCreateOpen(true)}>
           <Plus className="me-2 h-4 w-4" />
           آیتم جدید
@@ -195,13 +287,13 @@ export function PlannerPanel() {
             </select>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              value={semesterFilter}
-              onChange={(event) => setSemesterFilter(event.target.value)}
+              value={cadenceFilter}
+              onChange={(event) => setCadenceFilter(event.target.value as "" | PlannerCadence)}
             >
-              <option value="">همه ترم ها</option>
-              {semesters.map((semester) => (
-                <option key={semester.id} value={semester.id}>
-                  {semester.title}
+              <option value="">{plannerCadenceLabel("")}</option>
+              {cadenceOptions.map((cadence) => (
+                <option key={cadence} value={cadence}>
+                  {plannerCadenceLabel(cadence)}
                 </option>
               ))}
             </select>
@@ -224,8 +316,8 @@ export function PlannerPanel() {
                       <div className="mt-2 flex flex-wrap gap-2">
                         <Badge variant="secondary">{plannerStatusLabel(item.status)}</Badge>
                         <Badge variant={item.priority === "URGENT" ? "warning" : "outline"}>{plannerPriorityLabel(item.priority)}</Badge>
-                        {item.semester && <Badge variant="outline">{item.semester.title}</Badge>}
-                        {item.course && <Badge variant="outline">{item.course.name}</Badge>}
+                        <Badge variant="outline">{plannerCadenceLabel(item.cadence)}</Badge>
+                        {item.plannedFor && <Badge variant="outline">برنامه: {formatDateTime(item.plannedFor)}</Badge>}
                         {item.dueAt && <Badge variant="outline">مهلت: {formatDateTime(item.dueAt)}</Badge>}
                       </div>
                     </div>
@@ -257,7 +349,7 @@ export function PlannerPanel() {
         </CardContent>
       </Card>
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="ایجاد آیتم برنامه ریزی" description="ایجاد کار در پنجره پاپ آپ">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="ایجاد آیتم برنامه ریزی" description="برنامه ریزی روزانه، هفتگی یا ماهانه">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={createItem}>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="planner-title">عنوان</Label>
@@ -313,45 +405,72 @@ export function PlannerPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>ترم</Label>
+            <Label>بازه برنامه</Label>
             <select
               className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              value={form.semesterId}
-              onChange={(event) => setForm((prev) => ({ ...prev, semesterId: event.target.value, courseId: "" }))}
+              value={form.cadence}
+              onChange={(event) => setForm((prev) => ({ ...prev, cadence: event.target.value as PlannerCadence }))}
             >
-              <option value="">هیچ کدام</option>
-              {semesters.map((semester) => (
-                <option key={semester.id} value={semester.id}>
-                  {semester.title}
+              {cadenceOptions.map((cadence) => (
+                <option key={cadence} value={cadence}>
+                  {plannerCadenceLabel(cadence)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2">
-            <Label>درس</Label>
-            <select
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-              value={form.courseId}
-              onChange={(event) => setForm((prev) => ({ ...prev, courseId: event.target.value }))}
-            >
-              <option value="">هیچ کدام</option>
-              {availableCourses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.name}
-                </option>
-              ))}
-            </select>
+            <Label>تاریخ مرجع برنامه (شمسی)</Label>
+            <PersianDateInput
+              value={form.plannedForDate}
+              onChange={(value) => setForm((prev) => ({ ...prev, plannedForDate: value }))}
+              placeholder="اختیاری"
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>شروع</Label>
-            <Input type="datetime-local" value={form.startAt} onChange={(event) => setForm((prev) => ({ ...prev, startAt: event.target.value }))} />
+            <Label>ساعت مرجع برنامه</Label>
+            <Input
+              type="time"
+              value={form.plannedForTime}
+              onChange={(event) => setForm((prev) => ({ ...prev, plannedForTime: event.target.value }))}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label>مهلت</Label>
-            <Input type="datetime-local" value={form.dueAt} onChange={(event) => setForm((prev) => ({ ...prev, dueAt: event.target.value }))} />
+            <Label>تاریخ شروع (شمسی)</Label>
+            <PersianDateInput
+              value={form.startAtDate}
+              onChange={(value) => setForm((prev) => ({ ...prev, startAtDate: value }))}
+              placeholder="اختیاری"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>ساعت شروع</Label>
+            <Input
+              type="time"
+              value={form.startAtTime}
+              onChange={(event) => setForm((prev) => ({ ...prev, startAtTime: event.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>تاریخ مهلت (شمسی)</Label>
+            <PersianDateInput
+              value={form.dueAtDate}
+              onChange={(value) => setForm((prev) => ({ ...prev, dueAtDate: value }))}
+              placeholder="اختیاری"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>ساعت مهلت</Label>
+            <Input
+              type="time"
+              value={form.dueAtTime}
+              onChange={(event) => setForm((prev) => ({ ...prev, dueAtTime: event.target.value }))}
+            />
           </div>
 
           <label className="flex items-center gap-2 text-sm md:col-span-2">

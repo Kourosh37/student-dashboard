@@ -9,15 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PersianDateInput } from "@/components/ui/persian-date-input";
 import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
-import { apiFetch } from "@/lib/client-api";
+import { ApiClientError, apiFetch } from "@/lib/client-api";
+import { combineDateAndTimeToIso } from "@/lib/date-time";
 import { examStatusLabel, examTypeLabel, formatDateTime } from "@/lib/fa";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
-import type { Course, Exam, ExamStatus, ExamType, Semester } from "@/types/dashboard";
+import type { Course, Exam, ExamStatus, ExamType, ScheduleConflict, Semester } from "@/types/dashboard";
 
 const examTypeOptions: ExamType[] = ["MIDTERM", "FINAL", "QUIZ", "PROJECT", "PRESENTATION", "ASSIGNMENT", "OTHER"];
 const examStatusOptions: ExamStatus[] = ["SCHEDULED", "COMPLETED", "MISSED"];
@@ -26,6 +28,56 @@ type ExamsResponse = {
   items: Exam[];
   total: number;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractConflicts(error: unknown): ScheduleConflict[] {
+  if (!(error instanceof ApiClientError)) return [];
+  if (error.code !== "SCHEDULE_CONFLICT") return [];
+  if (!isRecord(error.details)) return [];
+
+  const rawConflicts = error.details.conflicts;
+  if (!Array.isArray(rawConflicts)) return [];
+
+  return rawConflicts
+    .filter((item): item is ScheduleConflict => {
+      if (!isRecord(item)) return false;
+      return (
+        typeof item.id === "string" &&
+        typeof item.title === "string" &&
+        typeof item.startAt === "string" &&
+        typeof item.endAt === "string" &&
+        typeof item.source === "string"
+      );
+    })
+    .map((item) => item);
+}
+
+function conflictSourceLabel(source: ScheduleConflict["source"]) {
+  if (source === "CLASS") return "کلاس";
+  if (source === "PLANNER") return "برنامه ریزی";
+  if (source === "EVENT") return "رویداد";
+  return "امتحان";
+}
+
+function askConflictOverride(conflicts: ScheduleConflict[]) {
+  const lines = conflicts.slice(0, 4).map((item) => {
+    const when = new Date(item.startAt).toLocaleString("fa-IR-u-ca-persian", {
+      hour: "2-digit",
+      minute: "2-digit",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+    return `${conflictSourceLabel(item.source)} | ${when} | ${item.title}`;
+  });
+
+  const suffix = conflicts.length > 4 ? `\n... و ${conflicts.length - 4} مورد دیگر` : "";
+  return window.confirm(`تداخل زمانی پیدا شد:\n${lines.join("\n")}${suffix}\n\nبا وجود تداخل ذخیره شود؟`);
+}
 
 export function ExamsPanel() {
   const router = useRouter();
@@ -74,8 +126,8 @@ export function ExamsPanel() {
       setItems(examData.items);
       setCourses(courseData.items);
       setSemesters(semesterData);
-    } catch (err) {
-      const parsed = toPanelError(err, "بارگذاری امتحانات انجام نشد");
+    } catch (error) {
+      const parsed = toPanelError(error, "بارگذاری امتحانات انجام نشد");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
@@ -98,24 +150,45 @@ export function ExamsPanel() {
     },
   });
 
+  async function submitCreate(allowConflicts: boolean) {
+    const examDateIso = combineDateAndTimeToIso(form.examDate, form.startTime || null);
+
+    if (!examDateIso) {
+      setFormError({
+        message: "تاریخ امتحان معتبر نیست.",
+        code: "VALIDATION_ERROR",
+        details: ["تاریخ امتحان معتبر نیست."],
+        fieldErrors: { examDate: ["تاریخ امتحان معتبر نیست."] },
+        status: 400,
+      });
+      return false;
+    }
+
+    await apiFetch<Exam>("/api/v1/exams", {
+      method: "POST",
+      body: JSON.stringify({
+        ...form,
+        semesterId: form.semesterId || null,
+        courseId: form.courseId || null,
+        examDate: examDateIso,
+        startTime: form.startTime || null,
+        durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null,
+        location: form.location || null,
+        notes: form.notes || null,
+        allowConflicts,
+      }),
+    });
+
+    return true;
+  }
+
   async function createExam(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setFormError(null);
+
     try {
-      await apiFetch<Exam>("/api/v1/exams", {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          semesterId: form.semesterId || null,
-          courseId: form.courseId || null,
-          examDate: new Date(form.examDate).toISOString(),
-          startTime: form.startTime || null,
-          durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : null,
-          location: form.location || null,
-          notes: form.notes || null,
-        }),
-      });
+      await submitCreate(false);
       setForm({
         title: "",
         semesterId: "",
@@ -132,8 +205,39 @@ export function ExamsPanel() {
       setCreateOpen(false);
       pushToast({ tone: "success", title: "امتحان ایجاد شد" });
       await loadData();
-    } catch (err) {
-      const parsed = toPanelError(err, "ایجاد امتحان انجام نشد");
+    } catch (error) {
+      const conflicts = extractConflicts(error);
+      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
+        try {
+          await submitCreate(true);
+          setForm({
+            title: "",
+            semesterId: "",
+            courseId: "",
+            examType: "MIDTERM",
+            status: "SCHEDULED",
+            examDate: "",
+            startTime: "",
+            durationMinutes: "",
+            location: "",
+            notes: "",
+            isPinned: false,
+          });
+          setCreateOpen(false);
+          pushToast({ tone: "success", title: "امتحان با وجود تداخل ایجاد شد" });
+          await loadData();
+          setSaving(false);
+          return;
+        } catch (retryError) {
+          const parsedRetry = toPanelError(retryError, "ایجاد امتحان انجام نشد");
+          setFormError(parsedRetry);
+          pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsedRetry.message });
+          setSaving(false);
+          return;
+        }
+      }
+
+      const parsed = toPanelError(error, "ایجاد امتحان انجام نشد");
       setFormError(parsed);
       pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsed.message });
     } finally {
@@ -148,8 +252,8 @@ export function ExamsPanel() {
         body: JSON.stringify(payload),
       });
       setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
-    } catch (err) {
-      const parsed = toPanelError(err, "بروزرسانی امتحان انجام نشد");
+    } catch (error) {
+      const parsed = toPanelError(error, "بروزرسانی امتحان انجام نشد");
       pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
     }
   }
@@ -160,8 +264,8 @@ export function ExamsPanel() {
       await apiFetch<{ deleted: boolean }>(`/api/v1/exams/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((item) => item.id !== id));
       pushToast({ tone: "success", title: "امتحان حذف شد" });
-    } catch (err) {
-      const parsed = toPanelError(err, "حذف امتحان انجام نشد");
+    } catch (error) {
+      const parsed = toPanelError(error, "حذف امتحان انجام نشد");
       pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
     }
   }
@@ -319,13 +423,13 @@ export function ExamsPanel() {
           </div>
 
           <div className="space-y-2">
-            <Label>تاریخ و زمان امتحان</Label>
-            <Input
-              type="datetime-local"
+            <Label>تاریخ امتحان (شمسی)</Label>
+            <PersianDateInput
               value={form.examDate}
-              onChange={(event) => setForm((prev) => ({ ...prev, examDate: event.target.value }))}
-              aria-invalid={Boolean(examDateError)}
+              onChange={(value) => setForm((prev) => ({ ...prev, examDate: value }))}
+              ariaInvalid={Boolean(examDateError)}
               required
+              placeholder="انتخاب تاریخ"
             />
             {examDateError && <p className="text-xs text-destructive">{examDateError}</p>}
           </div>

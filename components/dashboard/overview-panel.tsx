@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { apiFetch } from "@/lib/client-api";
 import { formatDate, formatDateTime, weekdayLabel } from "@/lib/fa";
 import { toPanelError } from "@/lib/panel-error";
@@ -157,18 +158,7 @@ export function OverviewPanel() {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="mb-3">
-              {data.profile?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={data.profile.avatarUrl}
-                  alt="تصویر پروفایل"
-                  className="h-20 w-20 rounded-full border border-border object-cover"
-                />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-border text-xs text-muted-foreground">
-                  بدون عکس
-                </div>
-              )}
+              <UserAvatar src={data.profile?.avatarUrl ?? null} alt="تصویر پروفایل" className="h-20 w-20" />
             </div>
             <p className="text-sm">
               <span className="text-muted-foreground">نام: </span>

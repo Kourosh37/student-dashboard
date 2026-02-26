@@ -1,4 +1,4 @@
-import type { PlannerPriority, PlannerStatus, Prisma } from "@prisma/client";
+import type { PlannerCadence, PlannerPriority, PlannerStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 
@@ -7,8 +7,7 @@ export async function listPlannerItems(
   options: {
     status?: PlannerStatus;
     priority?: PlannerPriority;
-    semesterId?: string;
-    courseId?: string;
+    cadence?: PlannerCadence;
     pinned?: boolean;
     q?: string;
     limit: number;
@@ -19,8 +18,7 @@ export async function listPlannerItems(
     userId,
     ...(options.status ? { status: options.status } : {}),
     ...(options.priority ? { priority: options.priority } : {}),
-    ...(options.semesterId ? { semesterId: options.semesterId } : {}),
-    ...(options.courseId ? { courseId: options.courseId } : {}),
+    ...(options.cadence ? { cadence: options.cadence } : {}),
     ...(options.pinned !== undefined ? { isPinned: options.pinned } : {}),
     ...(options.q
       ? {
@@ -35,24 +33,9 @@ export async function listPlannerItems(
   const [items, total] = await prisma.$transaction([
     prisma.plannerItem.findMany({
       where,
-      orderBy: [{ isPinned: "desc" }, { dueAt: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ isPinned: "desc" }, { dueAt: "asc" }, { plannedFor: "asc" }, { createdAt: "desc" }],
       take: options.limit,
       skip: options.offset,
-      include: {
-        semester: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        course: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
     }),
     prisma.plannerItem.count({ where }),
   ]);
@@ -63,12 +46,12 @@ export async function listPlannerItems(
 export async function createPlannerItem(
   userId: string,
   data: {
-    semesterId?: string | null;
-    courseId?: string | null;
     title: string;
     description?: string | null;
     status: PlannerStatus;
     priority: PlannerPriority;
+    cadence: PlannerCadence;
+    plannedFor?: Date | null;
     startAt?: Date | null;
     dueAt?: Date | null;
     isPinned: boolean;
@@ -77,23 +60,15 @@ export async function createPlannerItem(
   return prisma.plannerItem.create({
     data: {
       userId,
-      semesterId: data.semesterId,
-      courseId: data.courseId,
       title: data.title,
       description: data.description,
       status: data.status,
       priority: data.priority,
+      cadence: data.cadence,
+      plannedFor: data.plannedFor,
       startAt: data.startAt,
       dueAt: data.dueAt,
       isPinned: data.isPinned,
-    },
-    include: {
-      semester: {
-        select: { id: true, title: true },
-      },
-      course: {
-        select: { id: true, name: true, code: true },
-      },
     },
   });
 }
@@ -102,12 +77,12 @@ export async function updatePlannerItem(
   userId: string,
   plannerId: string,
   data: {
-    semesterId?: string | null;
-    courseId?: string | null;
     title?: string;
     description?: string | null;
     status?: PlannerStatus;
     priority?: PlannerPriority;
+    cadence?: PlannerCadence;
+    plannedFor?: Date | null;
     startAt?: Date | null;
     dueAt?: Date | null;
     isPinned?: boolean;
@@ -122,28 +97,12 @@ export async function updatePlannerItem(
   return prisma.plannerItem.update({
     where: { id: plannerId },
     data,
-    include: {
-      semester: {
-        select: { id: true, title: true },
-      },
-      course: {
-        select: { id: true, name: true, code: true },
-      },
-    },
   });
 }
 
 export async function getPlannerItemById(userId: string, plannerId: string) {
   return prisma.plannerItem.findFirst({
     where: { id: plannerId, userId },
-    include: {
-      semester: {
-        select: { id: true, title: true },
-      },
-      course: {
-        select: { id: true, name: true, code: true },
-      },
-    },
   });
 }
 

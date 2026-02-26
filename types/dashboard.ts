@@ -1,4 +1,4 @@
-export type Weekday =
+﻿export type Weekday =
   | "MONDAY"
   | "TUESDAY"
   | "WEDNESDAY"
@@ -9,6 +9,7 @@ export type Weekday =
 
 export type PlannerStatus = "TODO" | "IN_PROGRESS" | "DONE" | "ARCHIVED";
 export type PlannerPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+export type PlannerCadence = "DAILY" | "WEEKLY" | "MONTHLY";
 export type ExamType = "MIDTERM" | "FINAL" | "QUIZ" | "PROJECT" | "PRESENTATION" | "ASSIGNMENT" | "OTHER";
 export type ExamStatus = "SCHEDULED" | "COMPLETED" | "MISSED";
 
@@ -80,20 +81,25 @@ export type PlannerItem = {
   description: string | null;
   status: PlannerStatus;
   priority: PlannerPriority;
+  cadence: PlannerCadence;
+  plannedFor: string | null;
   startAt: string | null;
   dueAt: string | null;
   isPinned: boolean;
   createdAt: string;
   updatedAt: string;
-  semester?: {
-    id: string;
-    title: string;
-  } | null;
-  course?: {
-    id: string;
-    name: string;
-    code: string | null;
-  } | null;
+};
+
+export type StudentEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  startAt: string;
+  endAt: string | null;
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Exam = {
@@ -186,19 +192,21 @@ export type CalendarPlannerEvent = {
   description: string | null;
   status: PlannerStatus;
   priority: PlannerPriority;
+  cadence: PlannerCadence;
+  plannedFor: string | null;
   startAt: string | null;
   dueAt: string | null;
   isPinned: boolean;
-  course: {
-    id: string;
-    name: string;
-    code: string | null;
-    color: string | null;
-  } | null;
-  semester: {
-    id: string;
-    title: string;
-  } | null;
+};
+
+export type CalendarUserEvent = {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  startAt: string;
+  endAt: string | null;
+  isPinned: boolean;
 };
 
 export type CalendarExamEvent = {
@@ -238,4 +246,14 @@ export type CalendarSessionEvent = {
       title: string;
     };
   };
+};
+
+export type ScheduleConflictSource = "CLASS" | "PLANNER" | "EVENT" | "EXAM";
+
+export type ScheduleConflict = {
+  source: ScheduleConflictSource;
+  id: string;
+  title: string;
+  startAt: string;
+  endAt: string;
 };

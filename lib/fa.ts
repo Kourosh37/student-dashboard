@@ -1,6 +1,7 @@
-﻿import type {
+import type {
   ExamStatus,
   ExamType,
+  PlannerCadence,
   PlannerPriority,
   PlannerStatus,
   Weekday,
@@ -28,6 +29,12 @@ const plannerPriorityMap: Record<PlannerPriority, string> = {
   MEDIUM: "متوسط",
   HIGH: "زیاد",
   URGENT: "فوری",
+};
+
+const plannerCadenceMap: Record<PlannerCadence, string> = {
+  DAILY: "روزانه",
+  WEEKLY: "هفتگی",
+  MONTHLY: "ماهانه",
 };
 
 const examTypeMap: Record<ExamType, string> = {
@@ -60,6 +67,11 @@ export function plannerPriorityLabel(value: PlannerPriority) {
   return plannerPriorityMap[value];
 }
 
+export function plannerCadenceLabel(value: PlannerCadence | "") {
+  if (!value) return "همه بازه ها";
+  return plannerCadenceMap[value];
+}
+
 export function examTypeLabel(value: ExamType) {
   return examTypeMap[value];
 }
@@ -70,9 +82,19 @@ export function examStatusLabel(value: ExamStatus | "") {
 }
 
 export function formatDate(value: string | Date) {
-  return new Date(value).toLocaleDateString("fa-IR");
+  return new Date(value).toLocaleDateString("fa-IR-u-ca-persian", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 export function formatDateTime(value: string | Date) {
-  return new Date(value).toLocaleString("fa-IR");
+  return new Date(value).toLocaleString("fa-IR-u-ca-persian", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

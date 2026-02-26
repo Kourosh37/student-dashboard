@@ -3,21 +3,25 @@
 import { requireSession } from "@/lib/auth/guards";
 import { fail, handleApiError, ok, validationFail } from "@/lib/http";
 import { publishUserEvent } from "@/lib/realtime";
-import { detectScheduleConflicts, examDraftInterval } from "@/lib/services/conflict-service";
-import { createExam, listExams } from "@/lib/services/exam-service";
-import { assertLinkedEntitiesExist } from "@/lib/services/file-service";
-import { createExamSchema, listExamsQuerySchema } from "@/lib/validators/exam";
+import { eventDraftInterval, detectScheduleConflicts } from "@/lib/services/conflict-service";
+import { createEvent, listEvents } from "@/lib/services/event-service";
+import { createEventSchema, listEventsQuerySchema } from "@/lib/validators/event";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireSession(request);
     const query = Object.fromEntries(request.nextUrl.searchParams.entries());
-    const parsed = listExamsQuerySchema.safeParse(query);
+    const parsed = listEventsQuerySchema.safeParse(query);
     if (!parsed.success) {
       return validationFail(parsed.error.issues);
     }
 
-    const result = await listExams(session.userId, parsed.data);
+    const result = await listEvents(session.userId, {
+      ...parsed.data,
+      from: parsed.data.from ? new Date(parsed.data.from) : undefined,
+      to: parsed.data.to ? new Date(parsed.data.to) : undefined,
+    });
+
     return ok(result);
   } catch (error) {
     return handleApiError(error);
@@ -28,21 +32,14 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireSession(request);
     const body = await request.json();
-    const parsed = createExamSchema.safeParse(body);
+    const parsed = createEventSchema.safeParse(body);
     if (!parsed.success) {
       return validationFail(parsed.error.issues);
     }
 
-    await assertLinkedEntitiesExist(session.userId, {
-      semesterId: parsed.data.semesterId ?? null,
-      courseId: parsed.data.courseId ?? null,
-    });
-
-    const examDate = new Date(parsed.data.examDate);
-    const interval = examDraftInterval({
-      examDate,
-      durationMinutes: parsed.data.durationMinutes,
-    });
+    const startAt = new Date(parsed.data.startAt);
+    const endAt = parsed.data.endAt ? new Date(parsed.data.endAt) : null;
+    const interval = eventDraftInterval({ startAt, endAt });
 
     if (!parsed.data.allowConflicts) {
       const conflicts = await detectScheduleConflicts(session.userId, interval);
@@ -51,20 +48,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const created = await createExam(session.userId, {
-      semesterId: parsed.data.semesterId,
-      courseId: parsed.data.courseId,
+    const created = await createEvent(session.userId, {
       title: parsed.data.title,
-      examType: parsed.data.examType,
-      status: parsed.data.status,
-      examDate,
-      startTime: parsed.data.startTime,
-      durationMinutes: parsed.data.durationMinutes,
+      description: parsed.data.description,
       location: parsed.data.location,
-      notes: parsed.data.notes,
+      startAt,
+      endAt,
       isPinned: parsed.data.isPinned,
     });
-    publishUserEvent(session.userId, "exam.created", { examId: created.id });
+
+    publishUserEvent(session.userId, "event.created", { eventId: created.id });
     return ok(created, { status: 201 });
   } catch (error) {
     return handleApiError(error);

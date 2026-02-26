@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PersianDateInput } from "@/components/ui/persian-date-input";
 import { apiFetch } from "@/lib/client-api";
+import { combineDateAndTimeToIso } from "@/lib/date-time";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import type { Semester } from "@/types/dashboard";
@@ -33,14 +35,32 @@ export function SemesterCreatePage() {
     setSaving(true);
     setFormError(null);
 
+    const startDateIso = combineDateAndTimeToIso(form.startDate, "12:00");
+    const endDateIso = combineDateAndTimeToIso(form.endDate, "12:00");
+
+    if (!startDateIso || !endDateIso) {
+      setFormError({
+        message: "تاریخ شروع یا پایان معتبر نیست.",
+        code: "VALIDATION_ERROR",
+        details: ["تاریخ شروع یا پایان معتبر نیست."],
+        fieldErrors: {
+          startDate: ["تاریخ شروع معتبر نیست."],
+          endDate: ["تاریخ پایان معتبر نیست."],
+        },
+        status: 400,
+      });
+      setSaving(false);
+      return;
+    }
+
     try {
       const created = await apiFetch<Semester>("/api/v1/semesters", {
         method: "POST",
         body: JSON.stringify({
           ...form,
           code: form.code || null,
-          startDate: new Date(form.startDate).toISOString(),
-          endDate: new Date(form.endDate).toISOString(),
+          startDate: startDateIso,
+          endDate: endDateIso,
         }),
       });
 
@@ -100,24 +120,24 @@ export function SemesterCreatePage() {
 
             <div className="space-y-2">
               <Label>تاریخ شروع</Label>
-              <Input
-                type="date"
+              <PersianDateInput
                 value={form.startDate}
-                onChange={(event) => setForm((prev) => ({ ...prev, startDate: event.target.value }))}
-                aria-invalid={Boolean(startError)}
+                onChange={(value) => setForm((prev) => ({ ...prev, startDate: value }))}
+                ariaInvalid={Boolean(startError)}
                 required
+                placeholder="انتخاب تاریخ"
               />
               {startError && <p className="text-xs text-destructive">{startError}</p>}
             </div>
 
             <div className="space-y-2">
               <Label>تاریخ پایان</Label>
-              <Input
-                type="date"
+              <PersianDateInput
                 value={form.endDate}
-                onChange={(event) => setForm((prev) => ({ ...prev, endDate: event.target.value }))}
-                aria-invalid={Boolean(endError)}
+                onChange={(value) => setForm((prev) => ({ ...prev, endDate: value }))}
+                ariaInvalid={Boolean(endError)}
                 required
+                placeholder="انتخاب تاریخ"
               />
               {endError && <p className="text-xs text-destructive">{endError}</p>}
             </div>

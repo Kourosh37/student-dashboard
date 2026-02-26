@@ -1,4 +1,4 @@
-import { ExamStatus, ExamType } from "@prisma/client";
+﻿import { ExamStatus, ExamType } from "@prisma/client";
 import { z } from "zod";
 
 import { queryLimitSchema, queryOffsetSchema } from "@/lib/validators/pagination";
@@ -30,6 +30,7 @@ export const createExamSchema = z.object({
   location: z.string().trim().max(160).optional().nullable(),
   notes: z.string().trim().max(2500).optional().nullable(),
   isPinned: z.boolean().optional().default(false),
+  allowConflicts: z.boolean().optional().default(false),
 });
 
 export const updateExamSchema = createExamSchema.partial();

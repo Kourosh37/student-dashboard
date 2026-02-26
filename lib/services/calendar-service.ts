@@ -1,4 +1,4 @@
-import type { PlannerStatus, Prisma } from "@prisma/client";
+﻿import type { PlannerStatus, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 
@@ -15,8 +15,6 @@ export async function getCalendarData(
 ) {
   const plannerWhere: Prisma.PlannerItemWhereInput = {
     userId,
-    ...(input.semesterId ? { semesterId: input.semesterId } : {}),
-    ...(input.courseId ? { courseId: input.courseId } : {}),
     ...(input.status ? { status: input.status } : {}),
     ...(input.q
       ? {
@@ -39,7 +37,30 @@ export async function getCalendarData(
           lte: input.to,
         },
       },
+      {
+        plannedFor: {
+          gte: input.from,
+          lte: input.to,
+        },
+      },
     ],
+  };
+
+  const eventsWhere: Prisma.StudentEventWhereInput = {
+    userId,
+    ...(input.q
+      ? {
+          OR: [
+            { title: { contains: input.q, mode: "insensitive" } },
+            { description: { contains: input.q, mode: "insensitive" } },
+            { location: { contains: input.q, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+    startAt: {
+      gte: input.from,
+      lte: input.to,
+    },
   };
 
   const examWhere: Prisma.ExamWhereInput = {
@@ -78,18 +99,14 @@ export async function getCalendarData(
     },
   };
 
-  const [plannerItems, exams, sessions] = await Promise.all([
+  const [plannerItems, events, exams, sessions] = await Promise.all([
     prisma.plannerItem.findMany({
       where: plannerWhere,
-      orderBy: [{ dueAt: "asc" }, { startAt: "asc" }, { createdAt: "asc" }],
-      include: {
-        course: {
-          select: { id: true, name: true, code: true, color: true },
-        },
-        semester: {
-          select: { id: true, title: true },
-        },
-      },
+      orderBy: [{ dueAt: "asc" }, { startAt: "asc" }, { plannedFor: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.studentEvent.findMany({
+      where: eventsWhere,
+      orderBy: [{ startAt: "asc" }],
     }),
     prisma.exam.findMany({
       where: examWhere,
@@ -124,6 +141,7 @@ export async function getCalendarData(
 
   return {
     plannerItems,
+    events,
     exams,
     sessions,
   };

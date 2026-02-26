@@ -76,3 +76,34 @@ html[dir="rtl"] input[type="time"] {
   background: hsl(var(--primary) / 0.25);
   color: hsl(var(--foreground));
 }
+.rmdp-wrapper {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 30px hsl(var(--foreground) / 0.08);
+  color: hsl(var(--foreground));
+  font-family: var(--font-vazirmatn), sans-serif;
+}
+
+.rmdp-header,
+.rmdp-week,
+.rmdp-week-day,
+.rmdp-day,
+.rmdp-arrow-container {
+  color: hsl(var(--foreground));
+}
+
+.rmdp-day.rmdp-selected span,
+.rmdp-day.rmdp-today span {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover,
+.rmdp-arrow-container:hover {
+  background-color: hsl(var(--muted));
+}
+
+.rmdp-arrow {
+  border-color: hsl(var(--foreground));
+}

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { addDays, eachDayOfInterval } from "date-fns";
 
 import { requireSession } from "@/lib/auth/guards";
@@ -64,12 +64,10 @@ export async function GET(request: NextRequest) {
 
     const { from, to, semesterId, courseId, status, q } = parsed.data;
 
-    const [plannerItems, exams, sessions] = await Promise.all([
+    const [plannerItems, events, exams, sessions] = await Promise.all([
       prisma.plannerItem.findMany({
         where: {
           userId: session.userId,
-          ...(semesterId ? { semesterId } : {}),
-          ...(courseId ? { courseId } : {}),
           ...(status ? { status } : {}),
           ...(q
             ? {
@@ -82,12 +80,23 @@ export async function GET(request: NextRequest) {
           OR: [
             { dueAt: { gte: from, lte: to } },
             { startAt: { gte: from, lte: to } },
+            { plannedFor: { gte: from, lte: to } },
           ],
         },
-        include: {
-          course: {
-            select: { id: true, name: true, code: true },
-          },
+      }),
+      prisma.studentEvent.findMany({
+        where: {
+          userId: session.userId,
+          ...(q
+            ? {
+                OR: [
+                  { title: { contains: q, mode: "insensitive" } },
+                  { description: { contains: q, mode: "insensitive" } },
+                  { location: { contains: q, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+          startAt: { gte: from, lte: to },
         },
       }),
       prisma.exam.findMany({
@@ -135,13 +144,13 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    const events: string[] = [];
+    const eventsBody: string[] = [];
 
     for (const item of plannerItems) {
-      const start = item.dueAt ?? item.startAt;
+      const start = item.dueAt ?? item.startAt ?? item.plannedFor;
       if (!start) continue;
       const end = item.dueAt ? addDays(item.dueAt, 1) : addDays(start, 1);
-      events.push(
+      eventsBody.push(
         buildEvent({
           uid: `planner-${item.id}@student-dashboard`,
           title: `Planner: ${item.title}`,
@@ -152,12 +161,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    for (const item of events) {
+      const end = item.endAt ?? addDays(item.startAt, 1);
+      eventsBody.push(
+        buildEvent({
+          uid: `event-${item.id}@student-dashboard`,
+          title: `Event: ${item.title}`,
+          description: item.description ?? undefined,
+          location: item.location ?? undefined,
+          start: item.startAt,
+          end,
+        }),
+      );
+    }
+
     for (const exam of exams) {
       const start = exam.examDate;
       const end = exam.durationMinutes
         ? new Date(start.getTime() + exam.durationMinutes * 60_000)
         : addDays(start, 1);
-      events.push(
+      eventsBody.push(
         buildEvent({
           uid: `exam-${exam.id}@student-dashboard`,
           title: `Exam: ${exam.title}`,
@@ -188,7 +211,7 @@ export async function GET(request: NextRequest) {
         const start = toDateWithTime(day, session.startTime);
         const end = toDateWithTime(day, session.endTime);
 
-        events.push(
+        eventsBody.push(
           buildEvent({
             uid: `class-${session.id}-${day.toISOString()}@student-dashboard`,
             title: `Class: ${session.course.name}${session.course.code ? ` (${session.course.code})` : ""}`,
@@ -206,7 +229,7 @@ export async function GET(request: NextRequest) {
       "PRODID:-//Student Dashboard//Calendar Export//EN",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
-      ...events,
+      ...eventsBody,
       "END:VCALENDAR",
     ].join("\r\n");
 
