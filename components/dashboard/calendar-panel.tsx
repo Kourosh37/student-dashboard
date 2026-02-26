@@ -373,6 +373,12 @@ export function CalendarPanel() {
     setFocusDate((prev) => (direction === "prev" ? subMonths(prev, 1) : addMonths(prev, 1)));
   }
 
+  function goToToday() {
+    const now = new Date();
+    setFocusDate(now);
+    setSelectedDay((prev) => (prev ? now : prev));
+  }
+
   async function patchPlannerWithOptionalOverride(itemId: string, payload: Record<string, unknown>) {
     try {
       return await apiFetch<PlannerItem>(`/api/v1/planner/${itemId}`, {
@@ -488,7 +494,7 @@ export function CalendarPanel() {
           <Button variant={viewMode === "month" ? "default" : "outline"} onClick={() => setViewMode("month")}>
             ماهانه
           </Button>
-          <Button variant="outline" onClick={() => setFocusDate(new Date())}>
+          <Button variant="outline" onClick={goToToday}>
             امروز
           </Button>
         </div>
@@ -568,24 +574,36 @@ export function CalendarPanel() {
                 const exams = examsByDay.get(key) ?? [];
                 const sessions = sessionsByDay.get(key) ?? [];
                 const inCurrentMonth = isMonthView ? isSameMonth(day, focusDate) : true;
+                const isToday = isSameDay(day, new Date());
                 const total = planner.length + events.length + exams.length + sessions.length;
 
                 return (
                   <button
                     type="button"
                     key={key}
-                    className={`min-h-[170px] rounded-md border border-border/70 p-2 text-start ${
-                      inCurrentMonth ? "bg-background" : "bg-muted/35"
+                    className={`min-h-[170px] rounded-md border p-2 text-start transition-colors ${
+                      isToday
+                        ? "border-primary/50 bg-primary/10"
+                        : inCurrentMonth
+                          ? "border-border/70 bg-background"
+                          : "border-border/60 bg-muted/35"
                     }`}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={() => handleDropOnDate(day)}
                     onClick={() => setSelectedDay(day)}
                   >
                     <div className="mb-2 flex items-center justify-between">
-                      <p className={`text-xs font-semibold ${isSameDay(day, new Date()) ? "text-primary" : "text-muted-foreground"}`}>
+                      <p className={`text-xs font-semibold ${isToday ? "text-primary" : "text-muted-foreground"}`}>
                         {dayLabel(day)}
                       </p>
-                      {total > 0 && <Badge variant="outline">{total}</Badge>}
+                      <div className="flex items-center gap-1">
+                        {isToday && (
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                            امروز
+                          </span>
+                        )}
+                        {total > 0 && <Badge variant="outline">{total}</Badge>}
+                      </div>
                     </div>
 
                     <div className="space-y-1">
@@ -665,4 +683,3 @@ export function CalendarPanel() {
     </section>
   );
 }
-
