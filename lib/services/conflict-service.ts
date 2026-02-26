@@ -416,3 +416,4 @@ export function eventDraftInterval(input: { startAt: Date; endAt?: Date | null }
 export function examDraftInterval(input: { examDate: Date; durationMinutes?: number | null }) {
   return examInterval({ examDate: input.examDate, durationMinutes: input.durationMinutes ?? null });
 }
+

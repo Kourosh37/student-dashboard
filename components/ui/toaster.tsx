@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, Info, TriangleAlert, X } from "lucide-react";
@@ -62,3 +62,4 @@ export function Toaster() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+﻿import { NextRequest } from "next/server";
 
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { ApiError } from "@/lib/http";
@@ -15,3 +15,4 @@ export async function requireSession(request: NextRequest) {
     name: session.name,
   };
 }
+

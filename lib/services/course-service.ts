@@ -1,4 +1,4 @@
-import type { Prisma, Weekday } from "@prisma/client";
+﻿import type { Prisma, Weekday } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 
@@ -268,3 +268,4 @@ export async function listSchedule(
     },
   }));
 }
+

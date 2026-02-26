@@ -1,4 +1,4 @@
-const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+﻿const DATE_KEY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_KEY_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 function pad(value: number) {
@@ -63,3 +63,4 @@ export function splitIsoToDateAndTime(value: string | null | undefined) {
     time: `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`,
   };
 }
+

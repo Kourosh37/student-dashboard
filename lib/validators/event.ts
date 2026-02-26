@@ -45,3 +45,4 @@ export const updateEventSchema = eventBaseSchema.partial().superRefine((value, c
     });
   }
 });
+

@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+﻿import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 
@@ -94,3 +94,4 @@ export async function deleteFolder(userId: string, folderId: string) {
   });
   return deleted.count > 0;
 }
+

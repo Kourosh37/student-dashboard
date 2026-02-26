@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+﻿import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/http";
@@ -271,3 +271,4 @@ export async function assertLinkedEntitiesExist(userId: string, input: {
     }
   }
 }
+

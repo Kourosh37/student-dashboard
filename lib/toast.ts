@@ -1,4 +1,4 @@
-type ToastTone = "default" | "success" | "error";
+﻿type ToastTone = "default" | "success" | "error";
 
 export type ToastMessage = {
   id: string;
@@ -32,3 +32,4 @@ export function pushToast(input: ToastInput) {
     listener(toast);
   }
 }
+

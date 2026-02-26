@@ -19,6 +19,7 @@ import { formatDateTime, plannerCadenceLabel, plannerPriorityLabel, plannerStatu
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
+import { useConflictConfirm } from "@/lib/use-conflict-confirm";
 import type { PlannerCadence, PlannerItem, PlannerPriority, PlannerStatus, ScheduleConflict } from "@/types/dashboard";
 
 const statusOptions: PlannerStatus[] = ["TODO", "IN_PROGRESS", "DONE", "ARCHIVED"];
@@ -56,30 +57,6 @@ function extractConflicts(error: unknown): ScheduleConflict[] {
     .map((item) => item);
 }
 
-function conflictSourceLabel(source: ScheduleConflict["source"]) {
-  if (source === "CLASS") return "کلاس";
-  if (source === "PLANNER") return "برنامه ریزی";
-  if (source === "EXAM") return "امتحان";
-  return "رویداد";
-}
-
-function askConflictOverride(conflicts: ScheduleConflict[]) {
-  const lines = conflicts.slice(0, 4).map((item) => {
-    const when = new Date(item.startAt).toLocaleString("fa-IR-u-ca-persian", {
-      hour: "2-digit",
-      minute: "2-digit",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-
-    return `${conflictSourceLabel(item.source)} | ${when} | ${item.title}`;
-  });
-
-  const suffix = conflicts.length > 4 ? `\n... و ${conflicts.length - 4} مورد دیگر` : "";
-  return window.confirm(`تداخل زمانی پیدا شد:\n${lines.join("\n")}${suffix}\n\nبا وجود تداخل ذخیره شود؟`);
-}
-
 export function PlannerPanel() {
   const router = useRouter();
   const [items, setItems] = useState<PlannerItem[]>([]);
@@ -104,6 +81,8 @@ export function PlannerPanel() {
     dueAtTime: "",
     isPinned: false,
   });
+
+  const { requestConfirm, conflictDialog } = useConflictConfirm();
 
   const loadAll = useCallback(async () => {
     try {
@@ -189,8 +168,10 @@ export function PlannerPanel() {
       await loadAll();
     } catch (error) {
       const conflicts = extractConflicts(error);
-      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
-        try {
+      if (conflicts.length > 0) {
+        const shouldContinue = await requestConfirm(conflicts);
+        if (shouldContinue) {
+          try {
           await submitCreate(true);
           setForm({
             title: "",
@@ -217,6 +198,7 @@ export function PlannerPanel() {
           pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsedRetry.message });
           setSaving(false);
           return;
+        }
         }
       }
 
@@ -486,6 +468,13 @@ export function PlannerPanel() {
           </div>
         </form>
       </Modal>
+
+      {conflictDialog}
     </section>
   );
 }
+
+
+
+
+

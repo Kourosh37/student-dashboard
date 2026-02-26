@@ -1,4 +1,4 @@
-type RealtimeEvent = {
+﻿type RealtimeEvent = {
   id: string;
   type: string;
   timestamp: string;
@@ -42,3 +42,4 @@ export function publishUserEvent(userId: string, type: string, payload: Record<s
     listener(event);
   }
 }
+

@@ -25,6 +25,7 @@ import { formatDate, formatDateTime, weekdayLabel } from "@/lib/fa";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
+import { useConflictConfirm } from "@/lib/use-conflict-confirm";
 import { formatFileSize } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,29 +89,6 @@ function extractConflicts(error: unknown): ScheduleConflict[] {
       );
     })
     .map((item) => item);
-}
-
-function conflictSourceLabel(source: ScheduleConflict["source"]) {
-  if (source === "CLASS") return "کلاس";
-  if (source === "PLANNER") return "برنامه ریزی";
-  if (source === "EXAM") return "امتحان";
-  return "رویداد";
-}
-
-function askConflictOverride(conflicts: ScheduleConflict[]) {
-  const lines = conflicts.slice(0, 4).map((item) => {
-    const when = new Date(item.startAt).toLocaleString("fa-IR-u-ca-persian", {
-      hour: "2-digit",
-      minute: "2-digit",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-    return `${conflictSourceLabel(item.source)} | ${when} | ${item.title}`;
-  });
-
-  const suffix = conflicts.length > 4 ? `\n... و ${conflicts.length - 4} مورد دیگر` : "";
-  return window.confirm(`تداخل زمانی پیدا شد:\n${lines.join("\n")}${suffix}\n\nبا وجود تداخل ذخیره شود؟`);
 }
 
 function mapCourseToForm(course: Course): CourseFormState {
@@ -231,6 +209,7 @@ function SessionsEditor({ sessions, onChange }: { sessions: SessionDraft[]; onCh
 
 export function SemesterDetailPage({ semesterId }: Props) {
   const router = useRouter();
+  const { requestConfirm, conflictDialog } = useConflictConfirm();
   const uploadSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [semester, setSemester] = useState<Semester | null>(null);
@@ -323,7 +302,9 @@ export function SemesterDetailPage({ semesterId }: Props) {
       await loadDetail();
     } catch (error) {
       const conflicts = extractConflicts(error);
-      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
+      if (conflicts.length > 0) {
+        const shouldContinue = await requestConfirm(conflicts);
+        if (shouldContinue) {
         try {
           await submitCreate(true);
           setCourseForm(initialCourseForm);
@@ -338,6 +319,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
           pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsedRetry.message });
           setSavingCourse(false);
           return;
+        }
         }
       }
 
@@ -388,7 +370,9 @@ export function SemesterDetailPage({ semesterId }: Props) {
       await loadDetail();
     } catch (error) {
       const conflicts = extractConflicts(error);
-      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
+      if (conflicts.length > 0) {
+        const shouldContinue = await requestConfirm(conflicts);
+        if (shouldContinue) {
         try {
           const updated = await submitEdit(true);
           if (updated) {
@@ -405,6 +389,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
           pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsedRetry.message });
           setEditSaving(false);
           return;
+        }
         }
       }
 
@@ -741,6 +726,9 @@ export function SemesterDetailPage({ semesterId }: Props) {
           )}
         </CardContent>
       </Card>
+
+      {conflictDialog}
     </section>
   );
 }
+

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+﻿import { prisma } from "@/lib/db/prisma";
 import { ApiError } from "@/lib/http";
 
 export async function ensureSemesterOwnership(userId: string, semesterId: string) {
@@ -46,3 +46,4 @@ export async function ensureFolderOwnership(userId: string, folderId: string) {
     throw new ApiError("Folder not found", 404, "FOLDER_NOT_FOUND");
   }
 }
+

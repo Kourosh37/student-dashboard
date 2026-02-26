@@ -1,4 +1,4 @@
-import { SignJWT, jwtVerify, type JWTPayload } from "jose";
+﻿import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 
 export const SESSION_COOKIE_NAME = "student_dashboard_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
@@ -47,3 +47,4 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 export function getSessionMaxAge() {
   return SESSION_TTL_SECONDS;
 }
+

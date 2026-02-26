@@ -85,3 +85,4 @@ export const updateCourseSchema = courseBaseSchema
       validateSessionOverlaps(value.sessions, ctx);
     }
   });
+

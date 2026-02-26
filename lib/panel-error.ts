@@ -1,4 +1,4 @@
-import { parseClientError } from "@/lib/client-api";
+﻿import { parseClientError } from "@/lib/client-api";
 
 export type PanelError = {
   message: string;
@@ -22,3 +22,4 @@ export function toPanelError(error: unknown, fallback: string): PanelError {
 export function fieldError(fieldErrors: Record<string, string[]>, field: string) {
   return fieldErrors[field]?.[0] ?? "";
 }
+

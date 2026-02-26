@@ -33,6 +33,7 @@ import { plannerStatusLabel } from "@/lib/fa";
 import { toPanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
+import { useConflictConfirm } from "@/lib/use-conflict-confirm";
 import type {
   CalendarExamEvent,
   CalendarPlannerEvent,
@@ -151,32 +152,9 @@ function extractConflicts(error: unknown): ScheduleConflict[] {
     .map((item) => item);
 }
 
-function conflictSourceLabel(source: ScheduleConflict["source"]) {
-  if (source === "CLASS") return "کلاس";
-  if (source === "PLANNER") return "برنامه ریزی";
-  if (source === "EXAM") return "امتحان";
-  return "رویداد";
-}
-
-function askConflictOverride(conflicts: ScheduleConflict[]) {
-  const lines = conflicts.slice(0, 4).map((item) => {
-    const when = new Date(item.startAt).toLocaleString("fa-IR-u-ca-persian", {
-      hour: "2-digit",
-      minute: "2-digit",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-
-    return `${conflictSourceLabel(item.source)} | ${when} | ${item.title}`;
-  });
-
-  const suffix = conflicts.length > 4 ? `\n... و ${conflicts.length - 4} مورد دیگر` : "";
-  return window.confirm(`تداخل زمانی پیدا شد:\n${lines.join("\n")}${suffix}\n\nبا وجود تداخل ذخیره شود؟`);
-}
-
 export function CalendarPanel() {
   const router = useRouter();
+  const { requestConfirm, conflictDialog } = useConflictConfirm();
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [focusDate, setFocusDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
@@ -403,11 +381,14 @@ export function CalendarPanel() {
       });
     } catch (error) {
       const conflicts = extractConflicts(error);
-      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
+      if (conflicts.length > 0) {
+        const shouldContinue = await requestConfirm(conflicts);
+        if (shouldContinue) {
         return apiFetch<PlannerItem>(`/api/v1/planner/${itemId}`, {
           method: "PATCH",
           body: JSON.stringify({ ...payload, allowConflicts: true }),
         });
+        }
       }
       throw error;
     }
@@ -679,6 +660,9 @@ export function CalendarPanel() {
           </div>
         )}
       </Modal>
+
+      {conflictDialog}
     </section>
   );
 }
+

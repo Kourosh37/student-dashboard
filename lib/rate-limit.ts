@@ -1,4 +1,4 @@
-type LimitConfig = {
+﻿type LimitConfig = {
   windowMs: number;
   maxRequests: number;
 };
@@ -40,3 +40,4 @@ export function checkRateLimit(key: string, config: LimitConfig) {
     retryAfter: 0,
   };
 }
+

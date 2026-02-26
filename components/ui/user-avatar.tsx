@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 
@@ -13,7 +13,7 @@ type UserAvatarProps = {
 
 function AvatarFallbackSvg() {
   return (
-    <svg viewBox="0 0 96 96" className="h-full w-full" role="img" aria-label="تصویر پیش فرض پروفایل">
+    <svg viewBox="0 0 96 96" className="h-full w-full" role="img" aria-label="ØªØµÙˆÛŒØ± Ù¾ÛŒØ´ ÙØ±Ø¶ Ù¾Ø±ÙˆÙØ§ÛŒÙ„">
       <defs>
         <linearGradient id="avatar-bg" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#0f766e" />
@@ -29,7 +29,7 @@ function AvatarFallbackSvg() {
   );
 }
 
-export function UserAvatar({ src, alt = "پروفایل کاربر", className, imageClassName }: UserAvatarProps) {
+export function UserAvatar({ src, alt = "Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ú©Ø§Ø±Ø¨Ø±", className, imageClassName }: UserAvatarProps) {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
@@ -56,3 +56,4 @@ export function UserAvatar({ src, alt = "پروفایل کاربر", className, 
     </div>
   );
 }
+

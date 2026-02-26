@@ -20,3 +20,4 @@ export function buildContentDisposition(type: "inline" | "attachment", filename:
   const encoded = encodeRFC5987(filename);
   return `${type}; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
 }
+

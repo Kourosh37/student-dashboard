@@ -1,4 +1,4 @@
-import { PlannerStatus } from "@prisma/client";
+﻿import { PlannerStatus } from "@prisma/client";
 import { addDays } from "date-fns";
 import { z } from "zod";
 
@@ -20,3 +20,4 @@ export const icsQuerySchema = z
       to,
     };
   });
+

@@ -108,3 +108,4 @@ export async function deleteEvent(userId: string, eventId: string) {
   });
   return deleted.count > 0;
 }
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef } from "react";
 
@@ -63,3 +63,4 @@ export function useRealtime(options: Options) {
     };
   }, [options.enabled]);
 }
+

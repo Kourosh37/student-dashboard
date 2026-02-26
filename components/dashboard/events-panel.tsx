@@ -19,6 +19,7 @@ import { formatDateTime } from "@/lib/fa";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
 import { useRealtime } from "@/lib/use-realtime";
+import { useConflictConfirm } from "@/lib/use-conflict-confirm";
 import type { ScheduleConflict, StudentEvent } from "@/types/dashboard";
 
 type EventsResponse = {
@@ -74,30 +75,6 @@ function extractConflicts(error: unknown): ScheduleConflict[] {
     .map((item) => item);
 }
 
-function conflictSourceLabel(source: ScheduleConflict["source"]) {
-  if (source === "CLASS") return "کلاس";
-  if (source === "PLANNER") return "برنامه ریزی";
-  if (source === "EXAM") return "امتحان";
-  return "رویداد";
-}
-
-function askConflictOverride(conflicts: ScheduleConflict[]) {
-  const lines = conflicts.slice(0, 4).map((item) => {
-    const when = new Date(item.startAt).toLocaleString("fa-IR-u-ca-persian", {
-      hour: "2-digit",
-      minute: "2-digit",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-
-    return `${conflictSourceLabel(item.source)} | ${when} | ${item.title}`;
-  });
-
-  const suffix = conflicts.length > 4 ? `\n... و ${conflicts.length - 4} مورد دیگر` : "";
-  return window.confirm(`تداخل زمانی پیدا شد:\n${lines.join("\n")}${suffix}\n\nبا وجود تداخل ذخیره شود؟`);
-}
-
 function eventToForm(item: StudentEvent): EventForm {
   const start = splitIsoToDateAndTime(item.startAt);
   const end = splitIsoToDateAndTime(item.endAt);
@@ -137,6 +114,7 @@ function buildEventPayload(form: EventForm, allowConflicts = false) {
 
 export function EventsPanel() {
   const router = useRouter();
+  const { requestConfirm, conflictDialog } = useConflictConfirm();
 
   const [items, setItems] = useState<StudentEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,7 +206,9 @@ export function EventsPanel() {
       await loadEvents();
     } catch (error) {
       const conflicts = extractConflicts(error);
-      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
+      if (conflicts.length > 0) {
+        const shouldContinue = await requestConfirm(conflicts);
+        if (shouldContinue) {
         try {
           await submitCreate(true);
           setCreateForm(initialForm);
@@ -243,6 +223,7 @@ export function EventsPanel() {
           pushToast({ tone: "error", title: "ایجاد ناموفق بود", description: parsedRetry.message });
           setSaving(false);
           return;
+        }
         }
       }
 
@@ -301,7 +282,9 @@ export function EventsPanel() {
       await loadEvents();
     } catch (error) {
       const conflicts = extractConflicts(error);
-      if (conflicts.length > 0 && askConflictOverride(conflicts)) {
+      if (conflicts.length > 0) {
+        const shouldContinue = await requestConfirm(conflicts);
+        if (shouldContinue) {
         try {
           await submitEdit(true);
           setEditOpen(false);
@@ -316,6 +299,7 @@ export function EventsPanel() {
           pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsedRetry.message });
           setSaving(false);
           return;
+        }
         }
       }
 
@@ -554,6 +538,9 @@ export function EventsPanel() {
           </div>
         </form>
       </Modal>
+
+      {conflictDialog}
     </section>
   );
 }
+

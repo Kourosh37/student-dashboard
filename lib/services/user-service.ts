@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+﻿import { prisma } from "@/lib/db/prisma";
 
 const AVATAR_ASSET_PREFIX = "asset:";
 
@@ -51,3 +51,4 @@ export async function createUser(input: {
     },
   });
 }
+

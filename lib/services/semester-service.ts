@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db/prisma";
+﻿import { prisma } from "@/lib/db/prisma";
 
 export async function listSemesters(userId: string, options: { q?: string; pinned?: boolean }) {
   return prisma.semester.findMany({
@@ -109,3 +109,4 @@ export async function deleteSemester(userId: string, semesterId: string) {
   });
   return deleted.count > 0;
 }
+
