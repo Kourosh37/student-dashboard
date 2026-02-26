@@ -76,6 +76,37 @@ html[dir="rtl"] input[type="time"] {
   background: hsl(var(--primary) / 0.25);
   color: hsl(var(--foreground));
 }
+
+select {
+  border-radius: 0.65rem;
+  border: 1px solid hsl(var(--input) / 0.9);
+  background-color: hsl(var(--background) / 0.9);
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.06);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+select:hover {
+  border-color: hsl(var(--primary) / 0.45);
+}
+
+select:focus-visible {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.28);
+}
+
+input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.35rem;
+  border: 1px solid hsl(var(--input));
+  accent-color: hsl(var(--primary));
+}
+
+form {
+  gap: 1rem;
+}
+
 .rmdp-wrapper {
   background-color: hsl(var(--card));
   border: 1px solid hsl(var(--border));

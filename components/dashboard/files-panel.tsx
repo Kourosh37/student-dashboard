@@ -10,9 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
+import { UploadLoading } from "@/components/ui/upload-loading";
 import { apiFetch, apiFetchForm } from "@/lib/client-api";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
+import { useUploadProgress } from "@/lib/use-upload-progress";
 import { useRealtime } from "@/lib/use-realtime";
 import { useConfirmDialog } from "@/lib/use-confirm-dialog";
 import { formatFileSize } from "@/lib/utils";
@@ -359,6 +361,10 @@ export function FilesPanel() {
 
   const folderNameError = fieldError(formError?.fieldErrors ?? {}, "name");
   const fileError = fieldError(formError?.fieldErrors ?? {}, "file");
+  const uploadProgress = useUploadProgress(
+    uploading,
+    selectedFile ? `${selectedFile.name}-${selectedFile.size}-${selectedFile.lastModified}` : "none",
+  );
 
   const filteredCourses = useMemo(
     () => (selectedSemesterId ? courses.filter((course) => course.semesterId === selectedSemesterId) : courses),
@@ -518,7 +524,7 @@ export function FilesPanel() {
       </div>
 
       <Modal open={folderOpen} onClose={() => setFolderOpen(false)} title="ایجاد پوشه" description="ایجاد پوشه با والد اختیاری">
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleCreateFolder}>
+        <form className="grid gap-5 rounded-xl border border-border/70 bg-muted/20 p-4 md:grid-cols-2" onSubmit={handleCreateFolder}>
           <div className="space-y-2 md:col-span-2">
             <Label>نام پوشه</Label>
             <Input
@@ -563,14 +569,17 @@ export function FilesPanel() {
           <div className="md:col-span-2">
             <Button type="submit" disabled={creatingFolder}>
               {creatingFolder ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <FolderPlus className="me-2 h-4 w-4" />}
-              Create
+              ایجاد پوشه
             </Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={uploadOpen} onClose={() => setUploadOpen(false)} title="آپلود فایل" description="همه اتصال ها اختیاری هستند.">
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleUpload}>
+      <Modal open={uploadOpen} onClose={() => !uploading && setUploadOpen(false)} title="آپلود فایل" description="همه اتصال ها اختیاری هستند.">
+        <form className="grid gap-5 rounded-xl border border-border/70 bg-muted/20 p-4 md:grid-cols-2" onSubmit={handleUpload}>
+          <div className="md:col-span-2">
+            <UploadLoading active={uploading} progress={uploadProgress} file={selectedFile} />
+          </div>
           <div className="space-y-2 md:col-span-2">
             <Label>فایل</Label>
             <Input type="file" onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)} required />
@@ -666,7 +675,7 @@ export function FilesPanel() {
           <div className="md:col-span-2">
             <Button type="submit" disabled={uploading}>
               {uploading ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <UploadCloud className="me-2 h-4 w-4" />}
-              Upload
+              آپلود فایل
             </Button>
           </div>
         </form>
@@ -756,8 +765,6 @@ export function FilesPanel() {
     </section>
   );
 }
-
-
 
 
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -10,10 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { UploadLoading } from "@/components/ui/upload-loading";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { apiFetch, apiFetchForm } from "@/lib/client-api";
 import { fieldError, toPanelError, type PanelError } from "@/lib/panel-error";
 import { pushToast } from "@/lib/toast";
+import { useUploadProgress } from "@/lib/use-upload-progress";
 import type { UserProfile } from "@/types/dashboard";
 
 export function ProfilePanel() {
@@ -53,12 +55,12 @@ export function ProfilePanel() {
       const data = await apiFetch<UserProfile>("/api/v1/profile");
       hydrateProfile(data);
     } catch (err) {
-      const parsed = toPanelError(err, "بارگذاری پروفایل انجام نشد");
+      const parsed = toPanelError(err, "Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯");
       if (parsed.status === 401) {
         router.replace("/login");
         return;
       }
-      pushToast({ tone: "error", title: "بارگذاری ناموفق بود", description: parsed.message });
+      pushToast({ tone: "error", title: "Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ø§Ù…ÙˆÙÙ‚ Ø¨ÙˆØ¯", description: parsed.message });
     } finally {
       setLoading(false);
     }
@@ -108,11 +110,11 @@ export function ProfilePanel() {
         }),
       });
       hydrateProfile(updated);
-      pushToast({ tone: "success", title: "پروفایل بروزرسانی شد" });
+      pushToast({ tone: "success", title: "Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø¨Ø±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯" });
     } catch (err) {
-      const parsed = toPanelError(err, "بروزرسانی پروفایل انجام نشد");
+      const parsed = toPanelError(err, "Ø¨Ø±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "بروزرسانی ناموفق بود", description: parsed.message });
+      pushToast({ tone: "error", title: "Ø¨Ø±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ù†Ø§Ù…ÙˆÙÙ‚ Ø¨ÙˆØ¯", description: parsed.message });
     } finally {
       setSaving(false);
     }
@@ -121,10 +123,10 @@ export function ProfilePanel() {
   async function uploadAvatar() {
     if (!avatarFile) {
       setFormError({
-        message: "یک فایل تصویر برای آپلود انتخاب کنید.",
+        message: "ÛŒÚ© ÙØ§ÛŒÙ„ ØªØµÙˆÛŒØ± Ø¨Ø±Ø§ÛŒ Ø¢Ù¾Ù„ÙˆØ¯ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†ÛŒØ¯.",
         code: "FILE_REQUIRED",
         details: [],
-        fieldErrors: { file: ["یک فایل تصویر برای آپلود انتخاب کنید."] },
+        fieldErrors: { file: ["ÛŒÚ© ÙØ§ÛŒÙ„ ØªØµÙˆÛŒØ± Ø¨Ø±Ø§ÛŒ Ø¢Ù¾Ù„ÙˆØ¯ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†ÛŒØ¯."] },
         status: 400,
       });
       return;
@@ -141,11 +143,11 @@ export function ProfilePanel() {
       setAvatarFile(null);
       clearAvatarPreview();
       setAvatarInputVersion((value) => value + 1);
-      pushToast({ tone: "success", title: "عکس پروفایل بروزرسانی شد" });
+      pushToast({ tone: "success", title: "Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø¨Ø±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯" });
     } catch (err) {
-      const parsed = toPanelError(err, "آپلود عکس پروفایل انجام نشد");
+      const parsed = toPanelError(err, "Ø¢Ù¾Ù„ÙˆØ¯ Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "آپلود ناموفق بود", description: parsed.message });
+      pushToast({ tone: "error", title: "Ø¢Ù¾Ù„ÙˆØ¯ Ù†Ø§Ù…ÙˆÙÙ‚ Ø¨ÙˆØ¯", description: parsed.message });
     } finally {
       setAvatarBusy(false);
     }
@@ -161,11 +163,11 @@ export function ProfilePanel() {
       setAvatarFile(null);
       clearAvatarPreview();
       setAvatarInputVersion((value) => value + 1);
-      pushToast({ tone: "success", title: "عکس پروفایل حذف شد" });
+      pushToast({ tone: "success", title: "Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø­Ø°Ù Ø´Ø¯" });
     } catch (err) {
-      const parsed = toPanelError(err, "حذف عکس پروفایل انجام نشد");
+      const parsed = toPanelError(err, "Ø­Ø°Ù Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø§Ù†Ø¬Ø§Ù… Ù†Ø´Ø¯");
       setFormError(parsed);
-      pushToast({ tone: "error", title: "حذف ناموفق بود", description: parsed.message });
+      pushToast({ tone: "error", title: "Ø­Ø°Ù Ù†Ø§Ù…ÙˆÙÙ‚ Ø¨ÙˆØ¯", description: parsed.message });
     } finally {
       setAvatarBusy(false);
     }
@@ -173,6 +175,10 @@ export function ProfilePanel() {
 
   const nameError = fieldError(formError?.fieldErrors ?? {}, "name");
   const avatarFileError = fieldError(formError?.fieldErrors ?? {}, "file");
+  const avatarUploadProgress = useUploadProgress(
+    avatarBusy && Boolean(avatarFile),
+    avatarFile ? `${avatarFile.name}-${avatarFile.size}-${avatarFile.lastModified}` : "none",
+  );
 
   if (loading) {
     return (
@@ -185,27 +191,28 @@ export function ProfilePanel() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">پروفایل</h2>
+        <h2 className="text-2xl font-bold">Ù¾Ø±ÙˆÙØ§ÛŒÙ„</h2>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>پروفایل دانشجو</CardTitle>
-          <CardDescription>اطلاعات هویتی و تحصیلی خود را مدیریت کنید.</CardDescription>
+          <CardTitle>Ù¾Ø±ÙˆÙØ§ÛŒÙ„ Ø¯Ø§Ù†Ø´Ø¬Ùˆ</CardTitle>
+          <CardDescription>Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù‡ÙˆÛŒØªÛŒ Ùˆ ØªØ­ØµÛŒÙ„ÛŒ Ø®ÙˆØ¯ Ø±Ø§ Ù…Ø¯ÛŒØ±ÛŒØª Ú©Ù†ÛŒØ¯.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 rounded-lg border border-border/70 p-4">
+          <div className="mb-6 rounded-xl border border-border/70 bg-muted/20 p-4">
             <div className="flex flex-wrap items-center gap-4">
-              <UserAvatar src={avatarPreviewUrl ?? profile?.avatarUrl ?? null} alt="تصویر پروفایل" className="h-20 w-20" />
+              <UserAvatar src={avatarPreviewUrl ?? profile?.avatarUrl ?? null} alt="ØªØµÙˆÛŒØ± Ù¾Ø±ÙˆÙØ§ÛŒÙ„" className="h-20 w-20" />
               <div className="flex-1 space-y-2">
-                <Label>عکس پروفایل</Label>
+                <Label>Ø¹Ú©Ø³ Ù¾Ø±ÙˆÙØ§ÛŒÙ„</Label>
                 <Input
                   key={`avatar-input-${avatarInputVersion}`}
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                   onChange={(event) => handleAvatarFileChange(event.target.files?.[0] ?? null)}
                 />
-                <p className="text-xs text-muted-foreground">فرمت های مجاز: JPG، PNG، WEBP، GIF، AVIF. حداکثر حجم: 5MB</p>
+                <UploadLoading active={avatarBusy && Boolean(avatarFile)} progress={avatarUploadProgress} file={avatarFile} />
+                <p className="text-xs text-muted-foreground">ÙØ±Ù…Øª Ù‡Ø§ÛŒ Ù…Ø¬Ø§Ø²: JPGØŒ PNGØŒ WEBPØŒ GIFØŒ AVIF. Ø­Ø¯Ø§Ú©Ø«Ø± Ø­Ø¬Ù…: 5MB</p>
                 {avatarFileError && <p className="text-xs text-destructive">{avatarFileError}</p>}
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" onClick={uploadAvatar} disabled={avatarBusy || !avatarFile}>
@@ -214,20 +221,20 @@ export function ProfilePanel() {
                     ) : (
                       <UploadCloud className="me-2 h-4 w-4" />
                     )}
-                    آپلود عکس
+                    Ø¢Ù¾Ù„ÙˆØ¯ Ø¹Ú©Ø³
                   </Button>
                   <Button type="button" variant="outline" onClick={removeAvatar} disabled={avatarBusy || !profile?.avatarUrl}>
                     <Trash2 className="me-2 h-4 w-4" />
-                    حذف عکس
+                    Ø­Ø°Ù Ø¹Ú©Ø³
                   </Button>
                 </div>
               </div>
             </div>
           </div>
 
-          <form className="grid gap-4 md:grid-cols-2" onSubmit={saveProfile}>
+          <form className="grid gap-5 rounded-xl border border-border/70 bg-muted/20 p-4 md:grid-cols-2" onSubmit={saveProfile}>
             <div className="space-y-2">
-              <Label>نام</Label>
+              <Label>Ù†Ø§Ù…</Label>
               <Input
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
@@ -238,12 +245,12 @@ export function ProfilePanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>شماره دانشجویی</Label>
+              <Label>Ø´Ù…Ø§Ø±Ù‡ Ø¯Ø§Ù†Ø´Ø¬ÙˆÛŒÛŒ</Label>
               <Input value={form.studentId} onChange={(event) => setForm((prev) => ({ ...prev, studentId: event.target.value }))} />
             </div>
 
             <div className="space-y-2">
-              <Label>دانشگاه</Label>
+              <Label>Ø¯Ø§Ù†Ø´Ú¯Ø§Ù‡</Label>
               <Input
                 value={form.university}
                 onChange={(event) => setForm((prev) => ({ ...prev, university: event.target.value }))}
@@ -251,12 +258,12 @@ export function ProfilePanel() {
             </div>
 
             <div className="space-y-2">
-              <Label>رشته</Label>
+              <Label>Ø±Ø´ØªÙ‡</Label>
               <Input value={form.major} onChange={(event) => setForm((prev) => ({ ...prev, major: event.target.value }))} />
             </div>
 
             <div className="space-y-2">
-              <Label>ترم فعلی</Label>
+              <Label>ØªØ±Ù… ÙØ¹Ù„ÛŒ</Label>
               <Input
                 value={form.currentTerm}
                 onChange={(event) => setForm((prev) => ({ ...prev, currentTerm: event.target.value }))}
@@ -264,14 +271,14 @@ export function ProfilePanel() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label>درباره من</Label>
+              <Label>Ø¯Ø±Ø¨Ø§Ø±Ù‡ Ù…Ù†</Label>
               <Textarea value={form.bio} onChange={(event) => setForm((prev) => ({ ...prev, bio: event.target.value }))} />
             </div>
 
             <div className="md:col-span-2">
               <Button type="submit" disabled={saving}>
                 {saving ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <Save className="me-2 h-4 w-4" />}
-                ذخیره پروفایل
+                Ø°Ø®ÛŒØ±Ù‡ Ù¾Ø±ÙˆÙØ§ÛŒÙ„
               </Button>
             </div>
           </form>
@@ -281,15 +288,15 @@ export function ProfilePanel() {
       {profile && (
         <Card>
           <CardHeader>
-            <CardTitle>خلاصه حساب</CardTitle>
+            <CardTitle>Ø®Ù„Ø§ØµÙ‡ Ø­Ø³Ø§Ø¨</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1 text-sm">
             <p>
-              <span className="text-muted-foreground">ایمیل: </span>
+              <span className="text-muted-foreground">Ø§ÛŒÙ…ÛŒÙ„: </span>
               {profile.email}
             </p>
             <p>
-              <span className="text-muted-foreground">تاریخ عضویت: </span>
+              <span className="text-muted-foreground">ØªØ§Ø±ÛŒØ® Ø¹Ø¶ÙˆÛŒØª: </span>
               {new Date(profile.createdAt).toLocaleDateString("fa-IR")}
             </p>
           </CardContent>

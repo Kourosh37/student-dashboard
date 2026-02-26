@@ -31,7 +31,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UploadLoading } from "@/components/ui/upload-loading";
 import type { Course, CourseSession, FileItem, ScheduleConflict, Semester, Weekday } from "@/types/dashboard";
+import { useUploadProgress } from "@/lib/use-upload-progress";
 
 type Props = { semesterId: string };
 type CourseListResponse = { items: Course[]; total: number };
@@ -483,6 +485,10 @@ export function SemesterDetailPage({ semesterId }: Props) {
   const editNameError = fieldError(editFormError?.fieldErrors ?? {}, "name");
   const editSessionError = fieldError(editFormError?.fieldErrors ?? {}, "sessions.0.endTime") || fieldError(editFormError?.fieldErrors ?? {}, "sessions.0.startTime");
   const uploadFileError = fieldError(uploadFormError?.fieldErrors ?? {}, "file");
+  const uploadProgress = useUploadProgress(
+    uploading,
+    uploadFile ? `${uploadFile.name}-${uploadFile.size}-${uploadFile.lastModified}` : "none",
+  );
 
   const selectedCourseLabel = useMemo(() => {
     if (!uploadForm.courseId) return "برای کل ترم";
@@ -548,7 +554,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
         </CardHeader>
         <CardContent>
           {createCourseOpen && (
-            <form className="grid gap-4 rounded-md border border-border/70 p-3 md:grid-cols-2" onSubmit={createCourse}>
+            <form className="grid gap-5 rounded-xl border border-border/70 bg-muted/20 p-4 md:grid-cols-2" onSubmit={createCourse}>
             <div className="space-y-2 md:col-span-2">
               <Label>نام درس</Label>
               <Input
@@ -685,7 +691,10 @@ export function SemesterDetailPage({ semesterId }: Props) {
         </CardHeader>
         <CardContent>
           {uploadOpen && (
-            <form className="grid gap-4 rounded-md border border-border/70 p-3 md:grid-cols-2" onSubmit={uploadSemesterFile}>
+            <form className="grid gap-5 rounded-xl border border-border/70 bg-muted/20 p-4 md:grid-cols-2" onSubmit={uploadSemesterFile}>
+              <div className="md:col-span-2">
+                <UploadLoading active={uploading} progress={uploadProgress} file={uploadFile} />
+              </div>
               <div className="space-y-2 md:col-span-2">
                 <Label>فایل</Label>
                 <Input type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} required />
@@ -723,7 +732,7 @@ export function SemesterDetailPage({ semesterId }: Props) {
                   {uploading ? <LoaderCircle className="me-2 h-4 w-4 animate-spin" /> : <UploadCloud className="me-2 h-4 w-4" />}
                   آپلود
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setUploadOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setUploadOpen(false)} disabled={uploading}>
                   <X className="me-2 h-4 w-4" />
                   بستن
                 </Button>
