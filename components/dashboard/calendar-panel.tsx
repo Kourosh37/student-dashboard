@@ -552,10 +552,10 @@ export function CalendarPanel() {
             <CardDescription>با کلیک روی هر روز، همه برنامه ها به ترتیب ساعت نمایش داده می شوند.</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={() => moveRange("next")}>
+            <Button variant="outline" size="icon" onClick={() => moveRange("prev")}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => moveRange("prev")}>
+            <Button variant="outline" size="icon" onClick={() => moveRange("next")}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
           </div>
