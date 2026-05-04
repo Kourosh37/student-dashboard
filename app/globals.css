@@ -1,6 +1,8 @@
 ﻿@import "tailwindcss";
 
 :root {
+  --font-vazirmatn: "Tahoma", "Segoe UI", "Noto Naskh Arabic", "Noto Sans Arabic", sans-serif;
+  --font-jetbrains-mono: "Consolas", "Cascadia Mono", "JetBrains Mono", "Courier New", monospace;
   --background: 210 36% 97%;
   --foreground: 215 40% 12%;
   --card: 0 0% 100%;
